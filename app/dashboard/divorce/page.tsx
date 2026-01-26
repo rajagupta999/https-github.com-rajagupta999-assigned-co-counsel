@@ -3,54 +3,59 @@
 
 import { divorceSteps } from '@/lib/divorceContent';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function DivorceWorkflowPage() {
-    const router = useRouter();
-
     return (
-        <div className="min-h-[calc(100vh-64px)] bg-gray-50/50 p-12 overflow-y-auto animate-fade-in">
+        <div className="min-h-[calc(100vh-56px)] bg-slate-50/50 p-8 lg:p-12 overflow-y-auto animate-fade-in">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-12 text-center">
-                    <h1 className="text-4xl font-light text-gray-900 tracking-tight mb-4">Divorce Guidebook</h1>
-                    <p className="text-lg text-gray-500 max-w-2xl mx-auto">
-                        A step-by-step workflow for Assigned Counsel. Select a stage to launch Co-Pilot with typical drafting tasks pre-loaded.
-                    </p>
+                <div className="mb-10">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-sm shadow-rose-500/20">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Divorce Guidebook</h1>
+                            <p className="text-sm text-slate-400">Select a stage to launch Co-Pilot with pre-loaded drafting tasks.</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative">
-                    {/* Visual Connector Line (Desktop) */}
-                    <div className="hidden lg:block absolute top-[2.5rem] left-8 right-8 h-0.5 bg-gray-200 -z-10" />
-
-                    {divorceSteps.map((step, index) => (
-                        <div key={step.id} className="relative group">
-                            <Link
-                                href={`/dashboard/copilot?workflow=${step.id}`}
-                                className="block h-full bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-xl hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-1"
-                            >
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                    <span className="text-6xl font-black text-gray-900">{step.order}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {divorceSteps.map((step) => (
+                        <Link
+                            key={step.id}
+                            href={`/dashboard/copilot?workflow=${step.id}`}
+                            className="group block"
+                        >
+                            <div className="h-full bg-white border border-slate-200/80 rounded-xl p-6 hover:shadow-lg hover:border-blue-200 transition-all duration-200 relative overflow-hidden">
+                                {/* Step number badge */}
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 text-sm font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                        {step.order}
+                                    </div>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                        <path d="M5 12h14M12 5l7 7-7 7"></path>
+                                    </svg>
                                 </div>
 
-                                <div className="mb-6 inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    {/* Fixed Icon Size with Inline Styles */}
-                                    <svg className="w-6 h-6" style={{ width: '24px', height: '24px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                                </div>
-
-                                <h3 className="text-xl font-medium text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                                <h3 className="text-base font-semibold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors leading-snug">
                                     {step.title}
                                 </h3>
 
-                                <p className="text-sm text-gray-500 leading-relaxed mb-6">
+                                <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">
                                     {step.description}
                                 </p>
 
-                                <div className="flex items-center text-xs font-bold text-blue-600 uppercase tracking-widest mt-auto">
-                                    Launch Task
-                                    <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                    <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                                        Launch Task
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '12px', height: '12px' }} className="group-hover:translate-x-1 transition-transform"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                                    </span>
                                 </div>
-                            </Link>
-                        </div>
+                            </div>
+                        </Link>
                     ))}
                 </div>
             </div>
