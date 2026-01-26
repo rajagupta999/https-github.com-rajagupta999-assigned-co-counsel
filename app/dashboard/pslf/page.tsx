@@ -20,7 +20,7 @@ export default function PSLFPage() {
             {/* Main Progress Card */}
             <div className="bg-white rounded-3xl border border-gray-200 p-10 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <svg className="w-64 h-64 text-blue-600" style={{ width: '256px', height: '256px' }} width="256" height="256" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z" /></svg>
+                    <svg className="w-32 h-32 text-blue-600" style={{ width: '128px', height: '128px', opacity: 0.1 }} width="128" height="128" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z" /></svg>
                 </div>
 
                 <h2 className="text-lg font-medium text-gray-600 uppercase tracking-wide mb-6">Forgiveness Progress</h2>
