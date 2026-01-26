@@ -15,45 +15,98 @@ const navItems = [
 export default function Sidebar() {
     const pathname = usePathname();
 
+    const getIcon = (name: string, isActive: boolean) => {
+        const colorClass = isActive ? "text-blue-600" : "text-gray-500";
+        switch (name) {
+            case 'dashboard':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${colorClass} w-5 h-5`}>
+                        <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                );
+            case 'folder':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${colorClass} w-5 h-5`}>
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                );
+            case 'receipt_long':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${colorClass} w-5 h-5`}>
+                        <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path><line x1="14" y1="8" x2="8" y2="8"></line><line x1="16" y1="12" x2="8" y2="12"></line><line x1="13" y1="16" x2="8" y2="16"></line>
+                    </svg>
+                );
+            case 'smart_toy':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${colorClass} w-5 h-5`}>
+                        <path d="M12 2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2v0a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"></path>
+                        <rect x="5" y="9" width="14" height="14" rx="2"></rect>
+                        <line x1="9" y1="13" x2="9" y2="13"></line><line x1="15" y1="13" x2="15" y2="13"></line>
+                    </svg>
+                );
+            case 'school':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${colorClass} w-5 h-5`}>
+                        <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                    </svg>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
-        <aside className="w-64 h-full bg-[#f1f3f4] flex flex-col fixed left-0 top-0 border-r border-[#dadce0] z-20">
-            <div className="p-4 flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-serif font-bold text-lg">A</div>
-                <span className="text-xl font-normal text-gray-700 tracking-tight">Assigned<span className="font-bold text-gray-900">CoCounsel</span></span>
+        <aside className="w-64 h-full bg-slate-50 flex flex-col fixed left-0 top-0 border-r border-slate-200 z-20">
+            {/* Logo Area */}
+            <div className="h-16 flex items-center px-6 border-b border-transparent">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-sm mr-3">
+                    A
+                </div>
+                <div className="flex flex-col">
+                    <span className="text-lg font-bold text-slate-800 leading-tight">Assigned<span className="text-blue-600">Co</span></span>
+                </div>
             </div>
 
-            <div className="px-3 mb-6">
-                <Link href="/dashboard/cases/new" className="flex items-center gap-3 bg-white p-3 rounded-full shadow-sm hover:shadow-md transition-shadow border border-[#dadce0] cursor-pointer">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-google-blue ml-1"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    <span className="font-medium text-gray-700">New Case</span>
+            {/* CTA Button */}
+            <div className="px-4 py-6">
+                <Link href="/dashboard/cases/new" className="group flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm hover:shadow-md transition-all border border-slate-200 cursor-pointer">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </div>
+                    <span className="font-semibold text-slate-700">New Case</span>
                 </Link>
             </div>
 
-            <nav className="flex-1 px-3 space-y-1">
+            {/* Navigation */}
+            <nav className="flex-1 px-4 space-y-1">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center gap-4 px-4 py-2.5 rounded-r-full text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'text-gray-600 hover:bg-gray-200'
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+                                ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-blue-100'
+                                : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
                                 }`}
                         >
-                            <span className={`material-icons-outlined ${isActive ? 'text-blue-800' : 'text-gray-500'}`}>
-                                {/* Placeholder Icons until Material Icons are loaded, utilizing simple text fallback if needed */}
-                                {item.label[0]}
-                            </span>
+                            {getIcon(item.icon, isActive)}
                             <span>{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="p-4 border-t border-[#dadce0]">
-                <div className="text-xs text-gray-500 text-center">
-                    &copy; 2025 AssignedCoCounsel
+            {/* Footer */}
+            <div className="p-6 border-t border-slate-200">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
+                        JD
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-slate-700">Jane Doe</p>
+                        <p className="text-xs text-slate-500">Attorney at Law</p>
+                    </div>
                 </div>
             </div>
         </aside>
