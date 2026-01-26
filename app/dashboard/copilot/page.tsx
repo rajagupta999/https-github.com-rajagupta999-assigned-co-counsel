@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { divorceGuidebook } from '@/lib/divorceContent';
+import { divorceSteps } from '@/lib/divorceContent';
 
 function CoPilotContent() {
     const searchParams = useSearchParams();
@@ -35,7 +35,7 @@ function CoPilotContent() {
     }, [workflowId]);
 
     const handleWorkflowLaunch = (stepId: string) => {
-        const step = divorceGuidebook.steps.find(s => s.id === stepId);
+        const step = divorceSteps.find(s => s.id === stepId);
         if (!step) return;
 
         setActiveWorkflow(stepId);
@@ -154,7 +154,7 @@ ${step.description}
 
                 {/* Workflow Selector (Quick Actions) */}
                 <div className="px-4 py-2 bg-white border-t border-gray-100 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                    {divorceGuidebook.steps.map((step) => (
+                    {divorceSteps.map((step) => (
                         <button
                             key={step.id}
                             onClick={() => handleWorkflowLaunch(step.id)}
@@ -188,6 +188,9 @@ ${step.description}
                         >
                             <svg className="w-4 h-4" style={{ width: '16px', height: '16px' }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
                         </button>
+                    </div>
+                    <div className="text-[10px] text-gray-400 text-center mt-2">
+                        Assigned Co-Counsel can make mistakes. Verify all legal citations.
                     </div>
                 </div>
             </div>
