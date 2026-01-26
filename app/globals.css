@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   /* Refined Color Palette */
   --background: 0 0% 100%;
