@@ -1,17 +1,22 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { divorceGuidebook } from '@/lib/divorceContent';
 
-export default function CoPilotPage() {
+function CoPilotContent() {
+    const searchParams = useSearchParams();
+    const workflowId = searchParams.get('workflow');
+
     const [messages, setMessages] = useState([
         { role: 'ai', content: 'I am your Assigned Co-Counsel. How can I help you today? You can ask me to draft documents, summarize cases, or guide you through the Divorce Workflow.' }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [editorContent, setEditorContent] = useState<string>('');
-    const [activeWorkflow, setActiveWorkflow] = useState<number | null>(null);
+    const [activeWorkflow, setActiveWorkflow] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const hasInitializedWorkflow = useRef(false);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -21,7 +26,15 @@ export default function CoPilotPage() {
         scrollToBottom();
     }, [messages]);
 
-    const handleWorkflowClick = (stepId: number) => {
+    // Handle URL Workflow Param
+    useEffect(() => {
+        if (workflowId && !hasInitializedWorkflow.current) {
+            handleWorkflowLaunch(workflowId);
+            hasInitializedWorkflow.current = true;
+        }
+    }, [workflowId]);
+
+    const handleWorkflowLaunch = (stepId: string) => {
         const step = divorceGuidebook.steps.find(s => s.id === stepId);
         if (!step) return;
 
@@ -33,22 +46,22 @@ export default function CoPilotPage() {
         setTimeout(() => {
             setMessages(prev => [...prev, {
                 role: 'ai',
-                content: `I've pulled up the guide for **${step.title}**. \n\nI have populated the editor with the key checklist items for this step.`
+                content: `I've pulled up the guide for **${step.title}**. \n\nI have populated the editor with the key checklist items for this step.\n\n${step.copilotPrompt}`
             }]);
 
             setEditorContent(`
 # ${step.title}
 
 ## Overview
-${step.content}
+${step.description}
 
 ## Action Checklist
-[ ] Review current safety status
+[ ] Review current status
 [ ] Gather relevant documents
 [ ] Secure digital accounts
 
-## Notes
-(Start typing your notes here...)
+## Draft
+(AI generation placeholder based on: "${step.copilotPrompt}")
             `);
         }, 800);
     };
@@ -144,10 +157,10 @@ ${step.content}
                     {divorceGuidebook.steps.map((step) => (
                         <button
                             key={step.id}
-                            onClick={() => handleWorkflowClick(step.id)}
+                            onClick={() => handleWorkflowLaunch(step.id)}
                             className="inline-flex items-center text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full mr-2 transition-colors border border-gray-200"
                         >
-                            {step.id}. {step.title.split(':')[0]}…
+                            {step.order}. {step.title.split(':')[0]}…
                         </button>
                     ))}
                 </div>
@@ -176,11 +189,16 @@ ${step.content}
                             <svg className="w-4 h-4" style={{ width: '16px', height: '16px' }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
                         </button>
                     </div>
-                    <div className="text-[10px] text-gray-400 text-center mt-2">
-                        {divorceGuidebook.disclaimer}
-                    </div>
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function CoPilotPage() {
+    return (
+        <Suspense fallback={<div>Loading Co-Pilot...</div>}>
+            <CoPilotContent />
+        </Suspense>
     );
 }
