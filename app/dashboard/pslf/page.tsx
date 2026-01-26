@@ -20,7 +20,7 @@ export default function PSLFPage() {
             {/* Main Progress Card */}
             <div className="bg-white rounded-3xl border border-gray-200 p-10 shadow-sm relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <svg className="w-64 h-64 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z" /></svg>
+                    <svg className="w-64 h-64 text-blue-600" style={{ width: '256px', height: '256px' }} width="256" height="256" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM13 16h-2v2h2v-2zm0-6h-2v4h2v-4z" /></svg>
                 </div>
 
                 <h2 className="text-lg font-medium text-gray-600 uppercase tracking-wide mb-6">Forgiveness Progress</h2>
@@ -98,7 +98,7 @@ export default function PSLFPage() {
 
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex gap-4 items-start">
                 <div className="text-blue-600 mt-1">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <svg className="w-6 h-6" style={{ width: '24px', height: '24px' }} width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
                 <div>
                     <h3 className="font-medium text-blue-900">Certify Your Employment</h3>

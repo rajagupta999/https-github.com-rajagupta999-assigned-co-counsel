@@ -101,7 +101,7 @@ ${step.content}
                         </pre>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                            <svg className="w-16 h-16 mb-4 text-gray-200" style={{ width: '64px', height: '64px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            <svg className="w-16 h-16 mb-4 text-gray-200" style={{ width: '64px', height: '64px' }} width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                             <p className="text-sm">Select a workflow or ask the Assistant to start drafting.</p>
                         </div>
                     )}
@@ -173,7 +173,7 @@ ${step.content}
                             disabled={!inputValue.trim()}
                             className="absolute right-2 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
                         >
-                            <svg className="w-4 h-4" style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                            <svg className="w-4 h-4" style={{ width: '16px', height: '16px' }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
                         </button>
                     </div>
                     <div className="text-[10px] text-gray-400 text-center mt-2">
