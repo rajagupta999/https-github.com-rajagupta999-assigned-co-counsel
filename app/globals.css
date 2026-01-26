@@ -1,0 +1,163 @@
+:root {
+  /* Google Productivity Palette (Clean, High Contrast) */
+  --background: 0 0% 100%;
+  /* #ffffff */
+  --foreground: 220 13% 18%;
+  /* #202124 (Dark Grey for Text) */
+
+  --muted: 210 20% 96%;
+  /* #f1f3f4 (Light Grey BG for Sidebars) */
+  --muted-foreground: 215 16% 47%;
+  /* #5f6368 */
+
+  --primary: 217 89% 61%;
+  /* #1a73e8 (Google Blue) */
+  --primary-foreground: 0 0% 100%;
+
+  --border: 214 32% 91%;
+  /* #dadce0 */
+  --input: 214 32% 91%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 220 13% 18%;
+
+  --radius: 0.5rem;
+  --font-sans: var(--font-inter);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans), 'Roboto', 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 400;
+  /* Cleaner, lighter headings */
+  color: #202124;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+
+/* Scaled down for productivity app feel */
+h2 {
+  font-size: 1.35rem;
+}
+
+h3 {
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1400px;
+  /* Wider for productivity */
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Shared Components (Clean Style) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.5rem;
+  /* Compact padding */
+  border-radius: 4px;
+  /* Less rounded */
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background-color: hsl(var(--primary));
+  color: white;
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+.btn-primary:hover {
+  background-color: #1765cc;
+  /* Darker blue */
+  box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #5f6368;
+}
+
+.btn-ghost:hover {
+  background-color: #f1f3f4;
+  color: #202124;
+}
+
+/* Productivity Cards (Flat Design) */
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.card:hover {
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+  border-color: transparent;
+}
+
+/* Form Inputs (Material-ish) */
+.input-clean {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #202124;
+  background: #fff;
+}
+
+.input-clean:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  border-width: 2px;
+  padding: calc(0.75rem - 1px) calc(1rem - 1px);
+  /* Prevent layout shift */
+}
+
+/* Animations - Subtle */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
