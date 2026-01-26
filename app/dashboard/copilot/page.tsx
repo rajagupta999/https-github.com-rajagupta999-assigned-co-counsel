@@ -26,7 +26,6 @@ function CoPilotContent() {
         scrollToBottom();
     }, [messages]);
 
-    // Handle URL Workflow Param
     useEffect(() => {
         if (workflowId && !hasInitializedWorkflow.current) {
             handleWorkflowLaunch(workflowId);
@@ -40,7 +39,6 @@ function CoPilotContent() {
 
         setActiveWorkflow(stepId);
 
-        // Simulate AI "Thinking" and then drafting
         setMessages(prev => [...prev, { role: 'user', content: `Start workflow: ${step.title}` }]);
 
         setTimeout(() => {
@@ -71,7 +69,6 @@ ${step.description}
         setMessages([...messages, { role: 'user', content: inputValue }]);
         setInputValue('');
 
-        // Simulating "Harvey" logic
         setTimeout(() => {
             let aiResponse = "I can help with that. Could you provide more details?";
             if (inputValue.toLowerCase().includes('draft')) {
@@ -89,61 +86,61 @@ ${step.description}
     };
 
     return (
-        <div className="h-[calc(100vh-64px)] flex bg-[#f0f2f5] overflow-hidden">
+        <div className="h-[calc(100vh-56px)] flex bg-slate-50 overflow-hidden">
 
-            {/* LEFT PANE: Editor / Canvas (The "Work") */}
-            <div className="flex-1 flex flex-col h-full border-r border-[#dadce0] bg-white shadow-sm z-10 transition-all duration-300">
+            {/* LEFT PANE: Editor */}
+            <div className="flex-1 flex flex-col h-full border-r border-slate-200/80 bg-white">
                 {/* Editor Toolbar */}
-                <div className="h-14 border-b border-[#dadce0] flex items-center justify-between px-4 bg-white">
-                    <div className="flex items-center gap-2">
-                        <span className="material-icons-outlined text-gray-500">description</span>
-                        <span className="font-medium text-gray-700 text-sm">Untitled Document</span>
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Saved</span>
+                <div className="h-12 border-b border-slate-100 flex items-center justify-between px-5 bg-white">
+                    <div className="flex items-center gap-2.5">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        <span className="font-semibold text-slate-600 text-sm">Untitled Document</span>
+                        <span className="text-[10px] text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 font-medium">Saved</span>
                     </div>
                     <div className="flex gap-2">
-                        <button className="text-xs font-medium text-gray-600 hover:bg-gray-100 px-3 py-1.5 rounded transition-colors">Format</button>
-                        <button className="text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded transition-colors">Export PDF</button>
+                        <button className="text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-md transition-colors">Format</button>
+                        <button className="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors">Export PDF</button>
                     </div>
                 </div>
 
                 {/* Editor Content Area */}
                 <div className="flex-1 overflow-y-auto p-8 bg-white cursor-text">
                     {editorContent ? (
-                        <pre className="font-sans text-gray-800 whitespace-pre-wrap leading-relaxed max-w-3xl mx-auto">
+                        <pre className="font-sans text-slate-700 whitespace-pre-wrap leading-relaxed max-w-3xl mx-auto text-[15px]">
                             {editorContent}
                         </pre>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
-                            <svg className="w-16 h-16 mb-4 text-gray-200" style={{ width: '64px', height: '64px' }} width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                            <p className="text-sm">Select a workflow or ask the Assistant to start drafting.</p>
+                        <div className="h-full flex flex-col items-center justify-center text-slate-400">
+                            <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '28px', height: '28px' }}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            </div>
+                            <p className="text-sm font-medium">Select a workflow or ask the Assistant to start drafting.</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* RIGHT PANE: Assistant / Chat (The "Brain") */}
+            {/* RIGHT PANE: Assistant Chat */}
             <div className="w-[400px] flex flex-col h-full bg-white relative">
                 {/* Chat Header */}
-                <div className="h-14 border-b border-[#dadce0] flex items-center justify-between px-4 bg-white z-20 shadow-sm">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">AI</div>
-                        <span className="font-semibold text-gray-800 text-sm">Co-Counsel</span>
+                <div className="h-12 border-b border-slate-100 flex items-center justify-between px-5 bg-white">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-sm">AI</div>
+                        <span className="font-semibold text-slate-800 text-sm">Co-Counsel</span>
                     </div>
-                    <div className="flex gap-1">
-                        <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                            Online
-                        </span>
-                    </div>
+                    <span className="text-[11px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1.5 font-semibold">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                        Online
+                    </span>
                 </div>
 
                 {/* Chat Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`p-3.5 rounded-2xl text-sm max-w-[85%] shadow-sm leading-relaxed ${msg.role === 'user'
-                                ? 'bg-blue-600 text-white rounded-br-none'
-                                : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
+                            <div className={`p-3 rounded-xl text-sm max-w-[85%] leading-relaxed ${msg.role === 'user'
+                                ? 'bg-blue-600 text-white rounded-br-sm'
+                                : 'bg-white text-slate-700 border border-slate-200 rounded-bl-sm shadow-sm'
                                 }`}>
                                 <div className="markdown-prose">{msg.content}</div>
                             </div>
@@ -152,24 +149,27 @@ ${step.description}
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Workflow Selector (Quick Actions) */}
-                <div className="px-4 py-2 bg-white border-t border-gray-100 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                {/* Workflow Selector */}
+                <div className="px-4 py-2.5 bg-white border-t border-slate-100 overflow-x-auto whitespace-nowrap scrollbar-hide">
                     {divorceSteps.map((step) => (
                         <button
                             key={step.id}
                             onClick={() => handleWorkflowLaunch(step.id)}
-                            className="inline-flex items-center text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full mr-2 transition-colors border border-gray-200"
+                            className={`inline-flex items-center text-[11px] font-semibold px-3 py-1.5 rounded-lg mr-1.5 transition-all border ${activeWorkflow === step.id
+                                ? 'text-blue-700 bg-blue-50 border-blue-200'
+                                : 'text-slate-500 bg-slate-50 border-slate-100 hover:bg-slate-100 hover:text-slate-700'
+                                }`}
                         >
-                            {step.order}. {step.title.split(':')[0]}…
+                            {step.order}. {step.title.split(':')[0]}
                         </button>
                     ))}
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 bg-white border-t border-[#dadce0]">
+                <div className="p-4 bg-white border-t border-slate-200/80">
                     <div className="relative flex items-center">
                         <textarea
-                            className="w-full bg-[#f1f3f4] text-gray-700 text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white transition-all resize-none"
+                            className="w-full bg-slate-50 text-slate-700 text-sm rounded-xl px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white focus:border-blue-300 transition-all resize-none border border-slate-200"
                             placeholder="Message Co-Counsel..."
                             rows={1}
                             value={inputValue}
@@ -184,14 +184,14 @@ ${step.description}
                         <button
                             onClick={sendMessage}
                             disabled={!inputValue.trim()}
-                            className="absolute right-2 p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:hover:bg-blue-600 transition-colors"
+                            className="absolute right-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-30 disabled:hover:bg-blue-600 transition-all shadow-sm"
                         >
-                            <svg className="w-4 h-4" style={{ width: '16px', height: '16px' }} width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '14px', height: '14px' }}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                         </button>
                     </div>
-                    <div className="text-[10px] text-gray-400 text-center mt-2">
+                    <p className="text-[10px] text-slate-400 text-center mt-2">
                         Assigned Co-Counsel can make mistakes. Verify all legal citations.
-                    </div>
+                    </p>
                 </div>
             </div>
         </div>
@@ -200,7 +200,14 @@ ${step.description}
 
 export default function CoPilotPage() {
     return (
-        <Suspense fallback={<div>Loading Co-Pilot...</div>}>
+        <Suspense fallback={
+            <div className="h-[calc(100vh-56px)] flex items-center justify-center bg-slate-50">
+                <div className="flex items-center gap-3 text-slate-400">
+                    <div className="w-5 h-5 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin"></div>
+                    <span className="text-sm font-medium">Loading Co-Pilot...</span>
+                </div>
+            </div>
+        }>
             <CoPilotContent />
         </Suspense>
     );

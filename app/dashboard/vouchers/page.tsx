@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 const mockTimeEntries = [
     { id: 101, date: '2025-10-10', activity: 'Court Appearance for Arraignment', duration: 3.5, type: 'In-Court' },
-    { id: 102, date: '2025-10-12', activity: 'Review of discovery materials and research', duration: 4.2, type: 'Out-of-Court' }, // Flag: Block Billing?
+    { id: 102, date: '2025-10-12', activity: 'Review of discovery materials and research', duration: 4.2, type: 'Out-of-Court' },
     { id: 103, date: '2025-10-15', activity: 'Drafting Motion to Suppress', duration: 2.0, type: 'Out-of-Court' },
 ];
 
@@ -22,58 +22,69 @@ export default function VouchersPage() {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+        <div className="p-8 max-w-[1400px] mx-auto animate-fade-in space-y-6">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl text-gray-800">Draft Voucher</h1>
-                    <p className="text-sm text-gray-500">Case: <span className="font-mono text-gray-700">CASE-2025-001</span> • John Doe</p>
+                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Draft Voucher</h1>
+                    <p className="text-sm text-slate-400 mt-1">Case: <span className="font-mono text-slate-600 bg-slate-50 px-1.5 py-0.5 rounded text-xs border border-slate-100">CASE-2025-001</span> &middot; John Doe</p>
                 </div>
                 <div className="flex gap-3">
                     {!auditComplete && (
-                        <button onClick={runAudit} disabled={isAuditing} className="btn btn-primary min-w-[160px]">
-                            {isAuditing ? 'Analyzing...' : 'Run Compliance Audit'}
+                        <button onClick={runAudit} disabled={isAuditing} className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm shadow-blue-500/20 transition-all disabled:opacity-60">
+                            {isAuditing ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    Analyzing...
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                    Run Compliance Audit
+                                </>
+                            )}
                         </button>
                     )}
                     {auditComplete && (
-                        <button className="btn bg-green-600 text-white hover:bg-green-700 border-none">
+                        <button className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold shadow-sm transition-all">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}><polyline points="20 6 9 17 4 12"></polyline></svg>
                             Submit Voucher
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="card">
-                        <h2 className="text-lg font-medium text-gray-800 mb-4 px-1">Time Entries</h2>
-                        <div className="space-y-0 divide-y divide-gray-100">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-5">
+                    <div className="bg-white rounded-xl border border-slate-200/80 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                            <h2 className="text-sm font-semibold text-slate-700">Time Entries</h2>
+                            <span className="text-[11px] text-slate-400 font-medium">{mockTimeEntries.length} entries</span>
+                        </div>
+                        <div className="divide-y divide-slate-100">
                             {mockTimeEntries.map((entry) => {
-                                // Simulate "Block Billing" Flag logic on ID 102
                                 const isFlagged = auditComplete && entry.id === 102;
-
                                 return (
-                                    <div key={entry.id} className={`p-4 ${isFlagged ? 'bg-red-50' : 'hover:bg-gray-50'} transition-colors`}>
+                                    <div key={entry.id} className={`px-6 py-4 ${isFlagged ? 'bg-red-50/50' : 'hover:bg-slate-50/80'} transition-colors`}>
                                         <div className="flex justify-between items-start">
-                                            <div className="space-y-1">
-                                                <p className="font-medium text-gray-900">{entry.activity}</p>
-                                                <div className="flex gap-2 text-xs text-gray-500">
-                                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">{entry.date}</span>
-                                                    <span>•</span>
-                                                    <span>{entry.type}</span>
+                                            <div className="space-y-1.5">
+                                                <p className="font-medium text-sm text-slate-800">{entry.activity}</p>
+                                                <div className="flex gap-2 text-[11px]">
+                                                    <span className="text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100 font-medium">{entry.date}</span>
+                                                    <span className={`px-2 py-0.5 rounded-md font-medium ${entry.type === 'In-Court' ? 'text-blue-600 bg-blue-50 border border-blue-100' : 'text-slate-500 bg-slate-50 border border-slate-100'}`}>{entry.type}</span>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-semibold text-gray-800">{entry.duration} hrs</p>
+                                                <p className="font-bold text-sm text-slate-800 tabular-nums">{entry.duration} hrs</p>
                                             </div>
                                         </div>
 
                                         {isFlagged && (
-                                            <div className="mt-3 flex items-start gap-3 text-sm text-red-700 bg-white border border-red-200 p-3 rounded">
-                                                <span className="text-lg">⚠️</span>
+                                            <div className="mt-3 flex items-start gap-3 text-sm text-red-700 bg-white border border-red-200 p-4 rounded-lg">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '18px', height: '18px', flexShrink: 0, marginTop: '2px' }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                                                 <div>
-                                                    <span className="font-bold block mb-1">Block Billing Risk Detected</span>
-                                                    <p className="text-red-600 leading-snug">Entry exceeds 4 hours without itemization. "Review and research" is considered vague by Nassau County rules.</p>
-                                                    <button className="text-blue-700 underline text-xs mt-2 font-medium">Auto-Itemize with AI</button>
+                                                    <span className="font-bold text-sm block mb-1">Block Billing Risk Detected</span>
+                                                    <p className="text-red-600 text-xs leading-relaxed">&quot;Review and research&quot; exceeds 4 hours without itemization. Considered vague by Nassau County rules.</p>
+                                                    <button className="text-blue-600 hover:text-blue-700 text-xs mt-2 font-bold">Auto-Itemize with AI</button>
                                                 </div>
                                             </div>
                                         )}
@@ -82,42 +93,45 @@ export default function VouchersPage() {
                             })}
                         </div>
 
-                        <div className="mt-6 pt-6 border-t border-gray-200 flex justify-between items-center px-4">
-                            <span className="text-gray-600 font-medium">Total Billable Amount</span>
-                            <span className="text-2xl font-bold text-gray-900">$1,532.60</span>
+                        <div className="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-slate-50/50">
+                            <span className="text-sm text-slate-500 font-medium">Total Billable Amount</span>
+                            <span className="text-2xl font-bold text-slate-900 tracking-tight">$1,532.60</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Audit Sidebar */}
-                <div className="space-y-6">
-                    <div className="card bg-gray-50 border-gray-200">
-                        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4">Submission Readiness</h3>
+                <div className="space-y-5">
+                    <div className="bg-white rounded-xl border border-slate-200/80 p-6">
+                        <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-5">Submission Readiness</h3>
 
                         {!auditComplete ? (
-                            <div className="text-center py-12">
-                                <div className="text-4xl mb-3 text-gray-300">🛡️</div>
-                                <p className="text-gray-500 text-sm px-4">Run the audit to check against county fee caps and billing rules.</p>
+                            <div className="text-center py-10">
+                                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px' }}><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                                </div>
+                                <p className="text-slate-500 text-sm font-medium">Run the audit to check compliance</p>
+                                <p className="text-slate-400 text-xs mt-1">Validates county fee caps and billing rules</p>
                             </div>
                         ) : (
-                            <div className="space-y-4 animate-fade-in divide-y divide-gray-200">
-                                <div className="pt-2 flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Chronology</span>
-                                    <span className="text-green-600 font-medium bg-green-50 px-2 rounded">Passed</span>
-                                </div>
-                                <div className="pt-4 flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Fee Caps</span>
-                                    <span className="text-green-600 font-medium bg-green-50 px-2 rounded">Passed</span>
-                                </div>
-                                <div className="pt-4 flex items-center justify-between text-sm">
-                                    <span className="text-gray-600">Description Quality</span>
-                                    <span className="text-red-600 font-bold bg-red-50 px-2 rounded">1 Issue</span>
-                                </div>
+                            <div className="space-y-0 animate-fade-in">
+                                {[
+                                    { label: 'Chronology', status: 'Passed', ok: true },
+                                    { label: 'Fee Caps', status: 'Passed', ok: true },
+                                    { label: 'Description Quality', status: '1 Issue', ok: false },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center justify-between py-3.5 border-b border-slate-100 last:border-0">
+                                        <span className="text-sm text-slate-600 font-medium">{item.label}</span>
+                                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md ${item.ok ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'}`}>
+                                            {item.status}
+                                        </span>
+                                    </div>
+                                ))}
 
-                                <div className="pt-6">
-                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Est. Payment Date</p>
-                                    <p className="font-bold text-xl text-gray-800 mt-1">Nov 28, 2025</p>
-                                    <p className="text-xs text-green-600 mt-1">Based on historic county data</p>
+                                <div className="pt-5 mt-2">
+                                    <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">Est. Payment Date</p>
+                                    <p className="font-bold text-xl text-slate-900 mt-1.5 tracking-tight">Nov 28, 2025</p>
+                                    <p className="text-xs text-emerald-600 mt-1 font-medium">Based on historic county data</p>
                                 </div>
                             </div>
                         )}
