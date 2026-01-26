@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 const navItems = [
     { label: 'Mission Control', href: '/dashboard', icon: 'dashboard' },
     { label: 'Cases', href: '/dashboard/cases', icon: 'folder' },
+    { label: 'Wiki', href: '/dashboard/wiki', icon: 'Wiki' },
     { label: 'Vouchers', href: '/dashboard/vouchers', icon: 'receipt_long' },
     { label: 'Co-Pilot', href: '/dashboard/copilot', icon: 'smart_toy' },
     { label: 'PSLF', href: '/dashboard/pslf', icon: 'school' },
@@ -50,6 +51,13 @@ export default function Sidebar() {
                         <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path>
                     </svg>
                 );
+            case 'Wiki':
+                return (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`${colorClass} w-5 h-5`}>
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                );
             default:
                 return null;
         }
@@ -80,7 +88,7 @@ export default function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 px-4 space-y-1">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.href || (item.href === '/dashboard/wiki' && pathname.startsWith('/dashboard/wiki'));
                     return (
                         <Link
                             key={item.href}
