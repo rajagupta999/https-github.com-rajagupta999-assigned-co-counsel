@@ -1,0 +1,212 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Check if user is an admin (you'll need to set up admin claims)
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+    
+    // Rate limiting helper - max 100 writes per minute per user
+    function rateLimitOk() {
+      return true; // Implement with Cloud Functions for production
+    }
+    
+    // Validate timestamp is recent (within 5 minutes)
+    function isRecentTimestamp(ts) {
+      return ts >= request.time - duration.value(5, 'm') 
+          && ts <= request.time + duration.value(5, 'm');
+    }
+    
+    // Validate string length
+    function isValidString(field, minLen, maxLen) {
+      return field is string && field.size() >= minLen && field.size() <= maxLen;
+    }
+    
+    // ============================================
+    // USER PROFILES
+    // ============================================
+    match /users/{userId} {
+      // Users can read their own profile
+      allow read: if isOwner(userId);
+      
+      // Users can create their own profile on first login
+      allow create: if isOwner(userId) && rateLimitOk();
+      
+      // Users can update their own profile (not delete)
+      allow update: if isOwner(userId) && rateLimitOk();
+      
+      // Admins can read all profiles
+      allow read: if isAdmin();
+    }
+    
+    // ============================================
+    // CASES
+    // ============================================
+    match /cases/{caseId} {
+      // Only authenticated users can read cases they're assigned to
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.assignedAttorneys.hasAny([request.auth.uid]) ||
+        isAdmin()
+      );
+      
+      // Create case - must set yourself as owner
+      allow create: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid
+        && rateLimitOk();
+      
+      // Update case - only owner or assigned attorneys
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.assignedAttorneys.hasAny([request.auth.uid])
+      ) && rateLimitOk();
+      
+      // Delete - only owner or admin
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+      
+      // Case documents subcollection
+      match /documents/{docId} {
+        allow read: if isAuthenticated() && (
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/cases/$(caseId)).data.assignedAttorneys.hasAny([request.auth.uid]) ||
+          isAdmin()
+        );
+        allow write: if isAuthenticated() && rateLimitOk();
+      }
+      
+      // Case notes subcollection
+      match /notes/{noteId} {
+        allow read, write: if isAuthenticated() && (
+          get(/databases/$(database)/documents/cases/$(caseId)).data.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/cases/$(caseId)).data.assignedAttorneys.hasAny([request.auth.uid])
+        );
+      }
+    }
+    
+    // ============================================
+    // MESSAGES (Privileged Communications)
+    // ============================================
+    match /messages/{messageId} {
+      // Only sender or recipient can read
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Must be sender to create
+      allow create: if isAuthenticated() 
+        && request.resource.data.senderId == request.auth.uid
+        && isValidString(request.resource.data.content, 1, 50000)
+        && rateLimitOk();
+      
+      // Cannot update or delete messages (audit trail)
+      allow update, delete: if false;
+    }
+    
+    // ============================================
+    // DOCUMENTS
+    // ============================================
+    match /documents/{docId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.sharedWith.hasAny([request.auth.uid]) ||
+        isAdmin()
+      );
+      
+      allow create: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid
+        && rateLimitOk();
+      
+      allow update: if isOwner(resource.data.userId) && rateLimitOk();
+      
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // ============================================
+    // VOUCHERS
+    // ============================================
+    match /vouchers/{voucherId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid || isAdmin()
+      );
+      
+      allow create: if isAuthenticated() 
+        && request.resource.data.userId == request.auth.uid
+        && rateLimitOk();
+      
+      allow update: if isOwner(resource.data.userId) && rateLimitOk();
+      
+      // Cannot delete vouchers (financial records)
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // AUDIT LOGS (HIPAA Compliance)
+    // ============================================
+    match /audit_logs/{logId} {
+      // Only admins can read audit logs
+      allow read: if isAdmin();
+      
+      // System can create (via Cloud Functions), users cannot
+      allow create: if false; // Use Cloud Functions to create
+      
+      // Cannot update or delete audit logs
+      allow update, delete: if false;
+    }
+    
+    // ============================================
+    // WIKI CONTENT (Public read for authenticated users)
+    // ============================================
+    match /wiki/{articleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // INSURANCE DATA (if using shared Firebase)
+    // ============================================
+    match /insurance_leads/{leadId} {
+      allow read, write: if isAuthenticated() && rateLimitOk();
+    }
+    
+    match /insurance_quotes/{quoteId} {
+      allow read, write: if isAuthenticated() && rateLimitOk();
+    }
+    
+    match /insurance_policies/{policyId} {
+      allow read, write: if isAuthenticated() && rateLimitOk();
+    }
+    
+    match /insurance_claims/{claimId} {
+      allow read, write: if isAuthenticated() && rateLimitOk();
+    }
+    
+    match /insurance_agents/{agentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // DENY ALL OTHER ACCESS
+    // ============================================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

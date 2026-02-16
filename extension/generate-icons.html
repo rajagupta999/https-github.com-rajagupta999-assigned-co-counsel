@@ -1,0 +1,23 @@
+<canvas id="c16" width="16" height="16"></canvas>
+<canvas id="c48" width="48" height="48"></canvas>
+<canvas id="c128" width="128" height="128"></canvas>
+<script>
+function drawIcon(id, size) {
+  const c = document.getElementById(id);
+  const ctx = c.getContext('2d');
+  // Background
+  const g = ctx.createLinearGradient(0, 0, size, size);
+  g.addColorStop(0, '#1e1b4b');
+  g.addColorStop(1, '#312e81');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, size, size, size * 0.15);
+  ctx.fill();
+  // Scale emoji
+  ctx.font = `${size * 0.6}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('⚖️', size/2, size/2);
+}
+[['c16',16],['c48',48],['c128',128]].forEach(([id,s]) => drawIcon(id,s));
+</script>

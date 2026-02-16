@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "18B Lawyer Research Agent",
+  "version": "1.0.0",
+  "description": "Agentic legal research — connects Westlaw, LexisNexis, and other premium databases to your Research Desk",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://1.next.westlaw.com/*",
+    "https://www.westlaw.com/*",
+    "https://signon.thomsonreuters.com/*",
+    "https://assigned-co-counsel-clawd.web.app/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://1.next.westlaw.com/*", "https://www.westlaw.com/*"],
+      "js": ["content-westlaw.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://signon.thomsonreuters.com/*"],
+      "js": ["content-westlaw-login.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://assigned-co-counsel-clawd.web.app/*", "http://localhost:3000/*"],
+      "js": ["content-acc.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icon48.png"
+  }
+}

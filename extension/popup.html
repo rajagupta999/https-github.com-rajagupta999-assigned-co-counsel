@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc; color: #1e293b;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      padding: 16px; color: white;
+    }
+    .header h1 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .header p { font-size: 11px; opacity: 0.7; }
+    .logo { display: flex; align-items: center; gap: 8px; }
+    .logo span { font-size: 24px; }
+    .body { padding: 16px; }
+    .status-card {
+      background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+      padding: 12px; margin-bottom: 12px;
+    }
+    .status-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 0; font-size: 12px;
+    }
+    .status-row:not(:last-child) { border-bottom: 1px solid #f1f5f9; }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;
+    }
+    .dot-green { background: #22c55e; }
+    .dot-gray { background: #cbd5e1; }
+    .dot-yellow { background: #eab308; }
+    .badge {
+      font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    }
+    .badge-free { background: #dcfce7; color: #16a34a; }
+    .badge-premium { background: #fef3c7; color: #d97706; }
+    .badge-connected { background: #dbeafe; color: #2563eb; }
+    .footer {
+      padding: 12px 16px; border-top: 1px solid #e2e8f0;
+      font-size: 10px; color: #94a3b8; text-align: center;
+    }
+    .footer a { color: #6366f1; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <span>⚖️</span>
+      <div>
+        <h1>18B Lawyer</h1>
+        <p>Research Agent Extension</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="status-card">
+      <div style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">
+        Connected Sources
+      </div>
+
+      <div class="status-row">
+        <span><span class="status-dot dot-green"></span>CourtListener</span>
+        <span class="badge badge-free">Free</span>
+      </div>
+      <div class="status-row">
+        <span><span class="status-dot dot-green"></span>Google Scholar</span>
+        <span class="badge badge-free">Free</span>
+      </div>
+      <div class="status-row">
+        <span><span class="status-dot dot-green"></span>RECAP / PACER</span>
+        <span class="badge badge-free">Free</span>
+      </div>
+      <div class="status-row">
+        <span><span class="status-dot dot-green"></span>Justia</span>
+        <span class="badge badge-free">Free</span>
+      </div>
+      <div class="status-row" id="westlaw-row">
+        <span><span class="status-dot dot-gray" id="westlaw-dot"></span>Westlaw</span>
+        <span class="badge badge-premium" id="westlaw-badge">Premium</span>
+      </div>
+      <div class="status-row" id="lexis-row">
+        <span><span class="status-dot dot-gray"></span>LexisNexis</span>
+        <span class="badge badge-premium">Coming Soon</span>
+      </div>
+    </div>
+
+    <div class="status-card" style="background: #fefce8; border-color: #fef08a;">
+      <div style="font-size: 11px; display: flex; align-items: start; gap: 6px;">
+        <span>💡</span>
+        <span>Search from the Research Desk. When a premium source is enabled, the agent opens a new tab, runs the search with your credentials, and returns results automatically.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://assigned-co-counsel-clawd.web.app/dashboard/research" target="_blank">Open Research Desk ↗</a>
+  </div>
+
+  <script>
+    // Check if Westlaw credentials are stored
+    chrome.storage.local.get(['westlaw_connected'], (data) => {
+      if (data.westlaw_connected) {
+        document.getElementById('westlaw-dot').className = 'status-dot dot-green';
+        document.getElementById('westlaw-badge').className = 'badge badge-connected';
+        document.getElementById('westlaw-badge').textContent = 'Connected';
+      }
+    });
+  </script>
+</body>
+</html>

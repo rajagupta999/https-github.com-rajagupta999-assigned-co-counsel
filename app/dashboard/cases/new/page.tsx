@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from 'react';
@@ -47,51 +46,51 @@ export default function NewCasePage() {
     const prevStep = () => setStep(step - 1);
 
     const steps = [
-        { num: 1, label: 'Client Info' },
-        { num: 2, label: 'Case Details' },
+        { num: 1, label: 'Client' },
+        { num: 2, label: 'Details' },
         { num: 3, label: 'Review' },
     ];
 
     return (
-        <div className="max-w-2xl mx-auto pt-12 px-8 animate-fade-in pb-20">
+        <div className="max-w-2xl mx-auto pt-6 sm:pt-12 px-4 sm:px-8 animate-fade-in pb-12 sm:pb-20">
             {/* Header */}
-            <div className="mb-10 text-center">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">New Case Intake</h1>
+            <div className="mb-6 sm:mb-10 text-center">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">New Case Intake</h1>
                 <p className="text-slate-400 text-sm mt-2">Enter case details to generate your digital file.</p>
             </div>
 
             {/* Progress Steps */}
-            <div className="flex justify-center mb-12">
+            <div className="flex justify-center mb-8 sm:mb-12">
                 <div className="flex items-center gap-0">
                     {steps.map((s, i) => (
                         <div key={s.num} className="flex items-center">
                             <div className="flex flex-col items-center">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${step >= s.num
-                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
+                                <div className={`w-8 sm:w-10 h-8 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold transition-all duration-300 ${step >= s.num
+                                    ? 'bg-navy-800 text-white shadow-md'
                                     : 'bg-slate-100 text-slate-400'
                                     }`}>
                                     {step > s.num ? (
                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: '16px', height: '16px' }}><polyline points="20 6 9 17 4 12"></polyline></svg>
                                     ) : s.num}
                                 </div>
-                                <span className={`text-[11px] font-medium mt-2 ${step >= s.num ? 'text-blue-600' : 'text-slate-400'}`}>{s.label}</span>
+                                <span className={`text-[10px] sm:text-[11px] font-medium mt-2 ${step >= s.num ? 'text-navy-800' : 'text-slate-400'}`}>{s.label}</span>
                             </div>
-                            {i < 2 && <div className={`w-16 h-0.5 mx-3 mb-5 transition-colors ${step > s.num ? 'bg-blue-600' : 'bg-slate-200'}`} />}
+                            {i < 2 && <div className={`w-8 sm:w-16 h-0.5 mx-2 sm:mx-3 mb-5 transition-colors ${step > s.num ? 'bg-navy-800' : 'bg-slate-200'}`} />}
                         </div>
                     ))}
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-8">
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm p-4 sm:p-6 lg:p-8">
                 {step === 1 && (
-                    <div className="space-y-6 animate-fade-in">
+                    <div className="space-y-5 sm:space-y-6 animate-fade-in">
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700">Client Full Name</label>
                             <input
                                 name="clientName"
                                 value={formData.clientName}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none bg-slate-50 focus:bg-white text-sm"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-100 transition-all outline-none bg-slate-50 focus:bg-white text-sm"
                                 placeholder="e.g. John Doe"
                                 autoFocus
                             />
@@ -102,15 +101,15 @@ export default function NewCasePage() {
                                 name="docketNumber"
                                 value={formData.docketNumber}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none bg-slate-50 focus:bg-white text-sm"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-100 transition-all outline-none bg-slate-50 focus:bg-white text-sm"
                                 placeholder="e.g. CR-2025-XXXX"
                             />
                         </div>
-                        <div className="pt-6 flex justify-end">
+                        <div className="pt-4 sm:pt-6 flex justify-end">
                             <button
                                 onClick={nextStep}
                                 disabled={!formData.clientName}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-blue-500/20"
+                                className="w-full sm:w-auto bg-navy-800 hover:bg-navy-900 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                             >
                                 Continue
                             </button>
@@ -119,7 +118,7 @@ export default function NewCasePage() {
                 )}
 
                 {step === 2 && (
-                    <div className="space-y-6 animate-fade-in">
+                    <div className="space-y-5 sm:space-y-6 animate-fade-in">
                         <div className="space-y-2">
                             <label className="block text-sm font-semibold text-slate-700">County / Jurisdiction</label>
                             <div className="relative">
@@ -127,7 +126,7 @@ export default function NewCasePage() {
                                     name="county"
                                     value={formData.county}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none bg-slate-50 focus:bg-white appearance-none text-sm"
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-100 transition-all outline-none bg-slate-50 focus:bg-white appearance-none text-sm"
                                 >
                                     <option value="New York">New York County (Manhattan)</option>
                                     <option value="Kings">Kings County (Brooklyn)</option>
@@ -146,22 +145,22 @@ export default function NewCasePage() {
                                 name="charges"
                                 value={formData.charges}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none bg-slate-50 focus:bg-white text-sm"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-navy-500 focus:ring-2 focus:ring-navy-100 transition-all outline-none bg-slate-50 focus:bg-white text-sm"
                                 placeholder="e.g. PL 140.20 Burglary"
                             />
                         </div>
-                        <div className="pt-6 flex justify-between">
+                        <div className="pt-4 sm:pt-6 flex flex-col-reverse sm:flex-row justify-between gap-3">
                             <button onClick={prevStep} className="text-slate-500 hover:text-slate-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">Back</button>
-                            <button onClick={nextStep} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm shadow-blue-500/20">Continue</button>
+                            <button onClick={nextStep} className="w-full sm:w-auto bg-navy-800 hover:bg-navy-900 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm">Continue</button>
                         </div>
                     </div>
                 )}
 
                 {step === 3 && (
-                    <div className="space-y-8 animate-fade-in">
-                        <div className="bg-slate-50 p-6 rounded-lg border border-slate-100">
-                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-5">Summary Review</h3>
-                            <dl className="space-y-4">
+                    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+                        <div className="bg-slate-50 p-4 sm:p-6 rounded-lg border border-slate-100">
+                            <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-4 sm:mb-5">Summary Review</h3>
+                            <dl className="space-y-3 sm:space-y-4">
                                 {[
                                     { label: 'Client', value: formData.clientName },
                                     { label: 'Docket', value: formData.docketNumber || '\u2014' },
@@ -170,17 +169,17 @@ export default function NewCasePage() {
                                 ].map(item => (
                                     <div key={item.label} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
                                         <dt className="text-sm text-slate-500">{item.label}</dt>
-                                        <dd className="text-sm font-semibold text-slate-800">{item.value}</dd>
+                                        <dd className="text-sm font-semibold text-slate-800 text-right">{item.value}</dd>
                                     </div>
                                 ))}
                             </dl>
                         </div>
 
-                        <div className="flex justify-between items-center">
+                        <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-3">
                             <button onClick={prevStep} className="text-slate-500 hover:text-slate-700 font-semibold text-sm px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">Back</button>
                             <button
                                 onClick={handleSave}
-                                className="bg-slate-900 hover:bg-slate-800 text-white px-8 py-3 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all"
+                                className="w-full sm:w-auto bg-navy-900 hover:bg-navy-800 text-white px-8 py-3 rounded-lg font-semibold text-sm shadow-lg hover:shadow-xl transition-all"
                             >
                                 Create Case File
                             </button>
@@ -188,7 +187,7 @@ export default function NewCasePage() {
                     </div>
                 )}
             </div>
-            <div className="text-center mt-8">
+            <div className="text-center mt-6 sm:mt-8">
                 <Link href="/dashboard" className="text-sm text-slate-400 hover:text-slate-600 transition-colors">Cancel and return to dashboard</Link>
             </div>
         </div>

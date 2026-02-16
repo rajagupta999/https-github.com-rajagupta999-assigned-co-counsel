@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>18B Lawyer: Product Strategy &amp; Feature Roadmap</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.5.0/github-markdown.min.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">18B Lawyer: Product Strategy &amp; Feature
+Roadmap</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#assigned-co-counsel-product-strategy-feature-roadmap"
+id="toc-assigned-co-counsel-product-strategy-feature-roadmap">Assigned
+Co-Counsel: Product Strategy &amp; Feature Roadmap</a>
+<ul>
+<li><a
+href="#building-the-essential-practice-management-tool-for-nyc-18b-panel-attorneys"
+id="toc-building-the-essential-practice-management-tool-for-nyc-18b-panel-attorneys">Building
+the Essential Practice Management Tool for NYC 18B Panel
+Attorneys</a></li>
+<li><a href="#table-of-contents" id="toc-table-of-contents">Table of
+Contents</a></li>
+<li><a href="#executive-summary" id="toc-executive-summary">Executive
+Summary</a></li>
+<li><a href="#market-context" id="toc-market-context">Market Context:
+NYC 18B Panel</a></li>
+<li><a href="#competitive-landscape"
+id="toc-competitive-landscape">Competitive Landscape</a></li>
+<li><a href="#current-assessment" id="toc-current-assessment">Current
+Product Assessment</a></li>
+<li><a href="#feature-recommendations"
+id="toc-feature-recommendations">Feature Recommendations by Practice
+Area</a></li>
+<li><a href="#technical-architecture"
+id="toc-technical-architecture">Technical Architecture</a></li>
+<li><a href="#roadmap" id="toc-roadmap">Prioritized Implementation
+Roadmap</a></li>
+<li><a href="#business-model" id="toc-business-model">Business Model
+&amp; Pricing</a></li>
+<li><a href="#success-metrics" id="toc-success-metrics">Success
+Metrics</a></li>
+<li><a href="#appendix-quick-implementation-guides"
+id="toc-appendix-quick-implementation-guides">Appendix: Quick
+Implementation Guides</a></li>
+<li><a href="#contact-next-steps" id="toc-contact-next-steps">Contact
+&amp; Next Steps</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="assigned-co-counsel-product-strategy-feature-roadmap">Assigned
+Co-Counsel: Product Strategy &amp; Feature Roadmap</h1>
+<h2
+id="building-the-essential-practice-management-tool-for-nyc-18b-panel-attorneys">Building
+the Essential Practice Management Tool for NYC 18B Panel Attorneys</h2>
+<p><strong>Prepared by:</strong> 18B Development Team<br />
+<strong>Date:</strong> February 4, 2026<br />
+<strong>Version:</strong> 1.0</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#executive-summary">Executive Summary</a></li>
+<li><a href="#market-context">Market Context: NYC 18B Panel</a></li>
+<li><a href="#competitive-landscape">Competitive Landscape</a></li>
+<li><a href="#current-assessment">Current Product Assessment</a></li>
+<li><a href="#feature-recommendations">Feature Recommendations by
+Practice Area</a></li>
+<li><a href="#technical-architecture">Technical Architecture</a></li>
+<li><a href="#roadmap">Prioritized Implementation Roadmap</a></li>
+<li><a href="#business-model">Business Model &amp; Pricing</a></li>
+<li><a href="#success-metrics">Success Metrics</a></li>
+</ol>
+<hr />
+<h2 id="executive-summary">Executive Summary</h2>
+<p>18B Lawyer has the opportunity to become the essential
+practice management and AI-assisted tool for the 3,000+ attorneys on
+NYC’s 18B panel who handle Family Court (custody), Criminal Court, and
+Supreme Court (divorce) matters.</p>
+<p><strong>The Core Problem:</strong> 18B attorneys operate as solo
+practitioners handling high-volume, low-fee cases with no dedicated
+technology support. They struggle with: - Voucher compliance and delayed
+payments - Managing 50-150+ active cases simultaneously - Document
+organization across multiple courts - Legal research on tight time
+budgets - Maintaining privilege in AI-assisted workflows</p>
+<p><strong>Our Solution:</strong> A purpose-built platform combining: -
+AI-assisted drafting with legal research integration -
+Practice-area-specific workflows (custody, criminal, divorce) - Voucher
+compliance automation and fee optimization - Privilege-protected
+document management - HIPAA-compliant handling of sensitive records</p>
+<p><strong>Target Market:</strong> - 3,000+ NYC 18B panel attorneys -
+Expandable to 50,000+ assigned counsel nationwide - $30-60M total
+addressable market</p>
+<p><strong>Competitive Moat:</strong> Enterprise legal AI tools (Harvey,
+CoCounsel) charge $500-2,000/user/month and ignore this market. We can
+deliver transformative value at $49-99/month.</p>
+<hr />
+<h2 id="market-context">Market Context: NYC 18B Panel</h2>
+<h3 id="what-is-the-18b-panel">What is the 18B Panel?</h3>
+<p>Under County Law Article 18-B, New York counties must provide legal
+representation to indigent defendants. The NYC 18B panel consists of
+private attorneys who accept court assignments in:</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 30%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Panel</th>
+<th>Court</th>
+<th>Case Types</th>
+<th>Hourly Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Criminal</strong></td>
+<td>Criminal Court, Supreme Court</td>
+<td>Misdemeanors, felonies, appeals</td>
+<td>$75-158/hr</td>
+</tr>
+<tr>
+<td><strong>Family</strong></td>
+<td>Family Court</td>
+<td>Custody, visitation, guardianship, neglect</td>
+<td>$75-158/hr</td>
+</tr>
+<tr>
+<td><strong>Matrimonial</strong></td>
+<td>Supreme Court</td>
+<td>Contested divorces, complex equitable distribution</td>
+<td>$75-158/hr</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pain-points-we-solve">Pain Points We Solve</h3>
+<h4 id="voucher-hell">1. Voucher Hell</h4>
+<ul>
+<li>Vouchers rejected for “block billing” (combining tasks)</li>
+<li>Fee caps vary by case type and county</li>
+<li>Delays of 60-120 days for payment</li>
+<li>No automated compliance checking</li>
+</ul>
+<p><strong>Our Solution:</strong> Real-time voucher compliance,
+auto-itemization, county-specific fee cap validation</p>
+<h4 id="case-overload">2. Case Overload</h4>
+<ul>
+<li>Average 50-150 active matters</li>
+<li>Paper files or disorganized digital folders</li>
+<li>Missing deadlines across multiple courthouses</li>
+<li>No way to quickly recall case details</li>
+</ul>
+<p><strong>Our Solution:</strong> Unified case management with
+AI-powered quick recall (“What’s the custody arrangement we proposed in
+the Martinez case?”)</p>
+<h4 id="research-time-crunch">3. Research Time Crunch</h4>
+<ul>
+<li>$75-158/hr doesn’t cover extensive research</li>
+<li>Need quick access to Family Court Act, DRL, CPL, Penal Law</li>
+<li>Judge-specific tendencies matter enormously</li>
+</ul>
+<p><strong>Our Solution:</strong> Integrated legal research with
+NY-specific databases, instant statute lookup, judge intelligence</p>
+<h4 id="document-chaos">4. Document Chaos</h4>
+<ul>
+<li>Discovery dumps (police reports, CPS records, medical records)</li>
+<li>No OCR or search capability</li>
+<li>Privilege risks when using AI tools</li>
+<li>HIPAA concerns with mental health/medical records</li>
+</ul>
+<p><strong>Our Solution:</strong> Secure document vault with OCR,
+privilege detection, PHI redaction, full-text search</p>
+<hr />
+<h2 id="competitive-landscape">Competitive Landscape</h2>
+<h3 id="enterprise-legal-ai-not-our-competitors">Enterprise Legal AI
+(Not Our Competitors)</h3>
+<table>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 14%" />
+<col style="width: 16%" />
+<col style="width: 52%" />
+</colgroup>
+<thead>
+<tr>
+<th>Product</th>
+<th>Price</th>
+<th>Target</th>
+<th>Why They Don’t Serve 18B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Harvey AI</td>
+<td>$500-2K/user/mo</td>
+<td>AmLaw 100 firms</td>
+<td>Too expensive, BigLaw focus</td>
+</tr>
+<tr>
+<td>Thomson Reuters CoCounsel</td>
+<td>$200+/user/mo</td>
+<td>Mid-large firms</td>
+<td>Enterprise sales only</td>
+</tr>
+<tr>
+<td>Clio Duo</td>
+<td>$99+/user/mo</td>
+<td>Small firms</td>
+<td>General practice, no 18B features</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adjacent-tools-partial-solutions">Adjacent Tools (Partial
+Solutions)</h3>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>What It Does</th>
+<th>Gap</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MyCase, Clio</td>
+<td>Practice management</td>
+<td>No 18B voucher support, no AI</td>
+</tr>
+<tr>
+<td>ChatGPT/Claude</td>
+<td>General AI</td>
+<td>No legal databases, privilege risks</td>
+</tr>
+<tr>
+<td>Westlaw/Lexis</td>
+<td>Legal research</td>
+<td>$400+/mo, no practice management</td>
+</tr>
+<tr>
+<td>Google Docs</td>
+<td>Document storage</td>
+<td>No legal intelligence</td>
+</tr>
+</tbody>
+</table>
+<h3 id="our-positioning">Our Positioning</h3>
+<p><strong>18B Lawyer = The only tool built specifically for
+assigned counsel work</strong></p>
+<ul>
+<li>Voucher compliance ✓</li>
+<li>Practice area workflows ✓<br />
+</li>
+<li>Privilege protection ✓</li>
+<li>Affordable pricing ✓</li>
+<li>NYC court-specific ✓</li>
+</ul>
+<hr />
+<h2 id="current-assessment">Current Product Assessment</h2>
+<h3 id="what-we-have-strengths">What We Have (Strengths)</h3>
+<table>
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 30%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Status</th>
+<th>Quality</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI Copilot</td>
+<td>✅ Built</td>
+<td>Functional - GROQ-powered chat</td>
+</tr>
+<tr>
+<td>Divorce Workflow</td>
+<td>✅ Built</td>
+<td>Good - Step-by-step guidance</td>
+</tr>
+<tr>
+<td>Voucher Drafting</td>
+<td>✅ Built</td>
+<td>Good - Compliance audit, block billing detection</td>
+</tr>
+<tr>
+<td>Privilege Protection</td>
+<td>✅ Built</td>
+<td>Excellent - Full A/C and work product detection</td>
+</tr>
+<tr>
+<td>PHI Scanner</td>
+<td>✅ Built</td>
+<td>Excellent - HIPAA Safe Harbor compliant</td>
+</tr>
+<tr>
+<td>Case Management</td>
+<td>✅ Built</td>
+<td>Basic - List view only</td>
+</tr>
+<tr>
+<td>Wiki/Knowledge Base</td>
+<td>✅ Built</td>
+<td>Basic - Static content</td>
+</tr>
+<tr>
+<td>PSLF Tracking</td>
+<td>✅ Built</td>
+<td>Basic - UI exists</td>
+</tr>
+</tbody>
+</table>
+<h3 id="critical-gaps">Critical Gaps</h3>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Impact</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No legal research integration</td>
+<td>Can’t cite authority</td>
+<td>🔴 Critical</td>
+</tr>
+<tr>
+<td>No document storage/search</td>
+<td>Can’t analyze discovery</td>
+<td>🔴 Critical</td>
+</tr>
+<tr>
+<td>AI lacks case context</td>
+<td>Generic responses</td>
+<td>🔴 Critical</td>
+</tr>
+<tr>
+<td>No custody workflow</td>
+<td>Missing key practice area</td>
+<td>🟡 High</td>
+</tr>
+<tr>
+<td>No criminal workflow</td>
+<td>Missing key practice area</td>
+<td>🟡 High</td>
+</tr>
+<tr>
+<td>No mobile app</td>
+<td>Can’t use in court</td>
+<td>🟡 High</td>
+</tr>
+<tr>
+<td>No calendar/deadlines</td>
+<td>Missing case management basic</td>
+<td>🟡 High</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="feature-recommendations">Feature Recommendations by Practice
+Area</h2>
+<h3 id="a.-criminal-defense-features">A. Criminal Defense Features</h3>
+<h4 id="a1.-criminal-workflow-modules">A1. Criminal Workflow
+Modules</h4>
+<p><strong>Arraignment Preparation</strong> - Auto-generate bail
+application from case facts - Criminal history impact analysis -
+Checklist: ID verified, contact info, employment, ties to community -
+Output: Bail memo, client interview notes template</p>
+<p><strong>Discovery Tracker</strong> - CPL 245 automatic disclosure
+checklist - Track what’s been received vs. outstanding - Flag when
+statutory deadlines pass - Generate demand letters for missing items</p>
+<p><strong>Suppression Motion Builder</strong> - Issue spotter: Miranda,
+search &amp; seizure, identification - Template selection based on facts
+- Auto-populate with case-specific details - Citation to relevant NY
+case law (People v. De Bour, Dunaway, etc.)</p>
+<p><strong>Plea Negotiation Assistant</strong> - Display sentencing
+guidelines for charges - Compare offer to likely trial outcome -
+Immigration consequences checker (for non-citizens) - Generate plea
+allocution script</p>
+<h4 id="a2.-criminal-specific-ai-prompts">A2. Criminal-Specific AI
+Prompts</h4>
+<pre><code>Pre-built prompts for Copilot:
+- &quot;Analyze this police report for Fourth Amendment issues&quot;
+- &quot;What are the elements the DA must prove for [charge]?&quot;
+- &quot;Draft a CPL 245 demand letter for outstanding discovery&quot;
+- &quot;What&#39;s the sentencing exposure for these charges?&quot;
+- &quot;Identify inconsistencies between witness statements&quot;</code></pre>
+<h4 id="a3.-criminal-legal-database">A3. Criminal Legal Database</h4>
+<p>Must include searchable access to: - NY Penal Law (all sections) -
+Criminal Procedure Law - Vehicle &amp; Traffic Law (for DWI/traffic
+crimes) - Key suppression cases (De Bour, Hollman, Dunaway, etc.) -
+Sentencing guidelines and ranges</p>
+<hr />
+<h3 id="b.-family-court-custody-features">B. Family Court / Custody
+Features</h3>
+<h4 id="b1.-custody-workflow-modules">B1. Custody Workflow Modules</h4>
+<p><strong>Initial Intake &amp; Assessment</strong> - Custody type
+selector: sole, joint, visitation schedule - Best interests factors
+checklist (DRL § 240) - Domestic violence screening questionnaire -
+Child support calculator integration</p>
+<p><strong>Custody Petition Drafter</strong> - Template for
+modification, initial custody, visitation - Auto-populate parties,
+children, relevant facts - Generate proposed parenting schedule -
+Include required statutory language</p>
+<p><strong>Trial Preparation</strong> - Witness list generator - Exhibit
+organizer - Cross-examination question builder for opposing party -
+Lincoln hearing preparation (child testimony)</p>
+<p><strong>Forensic Evaluation Response</strong> - Analyze forensic
+report for weaknesses - Generate response brief template - Identify
+areas to challenge expert</p>
+<h4 id="b2.-custody-specific-ai-prompts">B2. Custody-Specific AI
+Prompts</h4>
+<pre><code>Pre-built prompts:
+- &quot;What are the best interests factors under DRL 240?&quot;
+- &quot;Draft a proposed parenting time schedule for [scenario]&quot;
+- &quot;Analyze this forensic report for potential challenges&quot;
+- &quot;What&#39;s the standard for modification of custody?&quot;
+- &quot;How do NY courts handle relocation requests?&quot;</code></pre>
+<h4 id="b3.-family-law-database">B3. Family Law Database</h4>
+<p>Must include: - Domestic Relations Law - Family Court Act - Key
+custody cases (Tropea, Bliss v. Ach, etc.) - Child support standards -
+UCCJEA jurisdictional rules</p>
+<hr />
+<h3 id="c.-matrimonial-divorce-features">C. Matrimonial / Divorce
+Features</h3>
+<h4 id="c1.-divorce-workflow-modules-expand-existing">C1. Divorce
+Workflow Modules (Expand Existing)</h4>
+<p><strong>Financial Discovery Organizer</strong> - Statement of Net
+Worth builder - Asset/liability tracker - Income analysis from tax
+returns - Hidden asset red flags identifier</p>
+<p><strong>Equitable Distribution Calculator</strong> - Classify assets
+(marital vs. separate) - Valuation tracking - Distribution scenario
+modeling - Maintenance calculator (DRL § 236)</p>
+<p><strong>Settlement Agreement Drafter</strong> - Template-based
+generation - Clause library for common provisions - Child
+support/maintenance calculations included - QDRO flagging for retirement
+assets</p>
+<p><strong>Trial Notebook Builder</strong> - Organize exhibits by issue
+- Witness examination outlines - Legal memoranda by topic - Closing
+argument framework</p>
+<h4 id="c2.-divorce-specific-ai-prompts">C2. Divorce-Specific AI
+Prompts</h4>
+<pre><code>Pre-built prompts:
+- &quot;Calculate maintenance under the DRL formula&quot;
+- &quot;What factors affect equitable distribution of [asset]?&quot;
+- &quot;Draft a demand for financial discovery&quot;
+- &quot;Analyze this Statement of Net Worth for red flags&quot;
+- &quot;What&#39;s the law on dissipation of marital assets?&quot;</code></pre>
+<hr />
+<h3 id="d.-cross-practice-features">D. Cross-Practice Features</h3>
+<h4 id="d1.-document-vault-critical">D1. Document Vault (Critical)</h4>
+<p><strong>Core Capabilities:</strong> - Unlimited document storage per
+case - PDF, image, Word, Excel support - Automatic OCR for scanned
+documents - Full-text search across all documents - Folder organization
+by case/document type</p>
+<p><strong>AI-Powered Features:</strong> - “Find all references to
+[witness name] across discovery” - “Extract key dates from these
+documents” - “Summarize this 50-page CPS report” - Auto-generate
+document index</p>
+<p><strong>Security Features:</strong> - Privilege detection before AI
+processing - PHI scanning and redaction - Audit trail for all access -
+Client-matter segregation</p>
+<h4 id="d2.-legal-research-integration">D2. Legal Research
+Integration</h4>
+<p><strong>Free Sources (Implement First):</strong> - CourtListener API
+(case law) - NY Courts eCourts (court records) - NY Legislature
+(statutes) - Google Scholar Cases</p>
+<p><strong>Premium Sources (Phase 2):</strong> - Fastcase (often free
+through bar associations) - Casetext partnership potential -
+Westlaw/Lexis API (expensive, evaluate ROI)</p>
+<p><strong>Citation Features:</strong> - Every AI response includes
+citations - One-click verification of cited cases - “Find more cases
+like this” feature - Shepardize/KeyCite equivalent alerts</p>
+<h4 id="d3.-case-intelligence-memory">D3. Case Intelligence &amp;
+Memory</h4>
+<p><strong>Per-Case Context:</strong> - Client details (name, contact,
+key facts) - Case status and next court date - Opposing counsel and
+judge - Key documents tagged - Previous Copilot conversations about this
+case</p>
+<p><strong>AI Memory:</strong> - “What did we discuss about the Johnson
+custody case?” - “What was our strategy for the suppression motion?” -
+Automatically reference case context in responses</p>
+<h4 id="d4.-calendar-deadline-management">D4. Calendar &amp; Deadline
+Management</h4>
+<p><strong>Court Date Tracking:</strong> - Sync with court calendars
+where available - Automatic reminders (7 days, 1 day, morning of) -
+Travel time calculator to courthouse</p>
+<p><strong>Statutory Deadlines:</strong> - CPL 245 discovery timelines -
+Motion filing deadlines - Appeal windows - Statute of limitations
+tracking</p>
+<p><strong>Integration:</strong> - Google Calendar sync - Outlook sync -
+iCal export</p>
+<h4 id="d5.-voucher-optimization-suite">D5. Voucher Optimization
+Suite</h4>
+<p><strong>Compliance Engine:</strong> - Real-time block billing
+detection - County-specific fee cap checking - Activity code suggestions
+- Narrative quality scoring</p>
+<p><strong>Analytics:</strong> - Historical payment velocity by county -
+Average voucher amount by case type - Rejection rate tracking - Cash
+flow forecasting</p>
+<p><strong>Auto-Itemization:</strong> - AI breaks down combined entries
+- Suggests compliant descriptions - Maintains total time while improving
+descriptions</p>
+<h4 id="d6.-mobile-application">D6. Mobile Application</h4>
+<p><strong>Core Features:</strong> - Case lookup and quick facts - Court
+date calendar - Voice notes (transcribed to case file) - Document camera
+(scan and OCR) - Quick Copilot access</p>
+<p><strong>Court-Specific:</strong> - Courthouse directory - Judge
+information - Courtroom locations - WiFi passwords (crowdsourced)</p>
+<hr />
+<h2 id="technical-architecture">Technical Architecture</h2>
+<h3 id="current-stack">Current Stack</h3>
+<ul>
+<li><strong>Frontend:</strong> Next.js 16 + React + Tailwind CSS</li>
+<li><strong>Backend:</strong> Firebase (Firestore, Auth, Hosting)</li>
+<li><strong>AI:</strong> GROQ API (Llama 3.3 70B)</li>
+<li><strong>Deployment:</strong> Firebase Hosting</li>
+</ul>
+<h3 id="recommended-additions">Recommended Additions</h3>
+<h4 id="ai-layer">AI Layer</h4>
+<pre><code>┌─────────────────────────────────────────┐
+│           AI Orchestration              │
+├─────────────┬─────────────┬────────────┤
+│   GROQ      │   OpenAI    │  Anthropic │
+│  (Fast)     │  (Quality)  │  (Complex) │
+└─────────────┴─────────────┴────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│         Context Injection               │
+├─────────────┬─────────────┬────────────┤
+│ Case Facts  │ Legal DB    │ Documents  │
+└─────────────┴─────────────┴────────────┘</code></pre>
+<p><strong>Multi-Model Strategy:</strong> - GROQ (Llama): Fast
+responses, simple queries - OpenAI GPT-4: Complex reasoning, document
+analysis - Anthropic Claude: Long documents, nuanced legal analysis</p>
+<h4 id="document-processing-pipeline">Document Processing Pipeline</h4>
+<pre><code>Upload → OCR → Privilege Check → PHI Scan → Index → Store
+                    │                │
+                    ▼                ▼
+               If flagged:      If found:
+               Block AI use     Auto-redact</code></pre>
+<h4 id="legal-research-architecture">Legal Research Architecture</h4>
+<pre><code>User Query
+    │
+    ▼
+┌────────────────────────┐
+│   Query Classifier     │
+│  (statute? case? both?)│
+└────────────────────────┘
+    │
+    ├──► Statute DB (local) ──► Return sections
+    │
+    ├──► Case API (CourtListener) ──► Return cases
+    │
+    └──► AI Synthesis ──► Formatted response with citations</code></pre>
+<h3 id="data-model-extensions">Data Model Extensions</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Case with full context</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> Case {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  id<span class="op">:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  client<span class="op">:</span> ClientInfo<span class="op">;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  caseType<span class="op">:</span> <span class="st">&#39;criminal&#39;</span> <span class="op">|</span> <span class="st">&#39;custody&#39;</span> <span class="op">|</span> <span class="st">&#39;divorce&#39;</span><span class="op">;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  court<span class="op">:</span> CourtInfo<span class="op">;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  judge<span class="op">:</span> JudgeInfo<span class="op">;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  charges<span class="op">?:</span> CriminalCharge[]<span class="op">;</span>      <span class="co">// Criminal</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  children<span class="op">?:</span> ChildInfo[]<span class="op">;</span>          <span class="co">// Custody</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  assets<span class="op">?:</span> AssetInfo[]<span class="op">;</span>            <span class="co">// Divorce</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  documents<span class="op">:</span> DocumentRef[]<span class="op">;</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  vouchers<span class="op">:</span> VoucherRef[]<span class="op">;</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  conversations<span class="op">:</span> ConversationRef[]<span class="op">;</span> <span class="co">// AI chat history</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  deadlines<span class="op">:</span> Deadline[]<span class="op">;</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  status<span class="op">:</span> CaseStatus<span class="op">;</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  createdAt<span class="op">:</span> Timestamp<span class="op">;</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  updatedAt<span class="op">:</span> Timestamp<span class="op">;</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">// Document with metadata</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> <span class="bu">Document</span> {</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>  id<span class="op">:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>  caseId<span class="op">:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>  filename<span class="op">:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  fileType<span class="op">:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  uploadedAt<span class="op">:</span> Timestamp<span class="op">;</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  ocrText<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  privilegeStatus<span class="op">:</span> PrivilegeClassification<span class="op">;</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  phiStatus<span class="op">:</span> PHIScanResult<span class="op">;</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  tags<span class="op">:</span> <span class="dt">string</span>[]<span class="op">;</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>  summary<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>  <span class="co">// AI-generated</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="co">// Conversation for memory</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="kw">interface</span> Conversation {</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  id<span class="op">:</span> <span class="dt">string</span><span class="op">;</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>  caseId<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>   <span class="co">// Optional case context</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>  messages<span class="op">:</span> Message[]<span class="op">;</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>  createdAt<span class="op">:</span> Timestamp<span class="op">;</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>  summary<span class="op">?:</span> <span class="dt">string</span><span class="op">;</span>  <span class="co">// AI-generated for recall</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<hr />
+<h2 id="roadmap">Prioritized Implementation Roadmap</h2>
+<h3 id="phase-1-foundation-weeks-1-4">Phase 1: Foundation (Weeks
+1-4)</h3>
+<p><strong>Goal:</strong> Make the AI actually useful for legal work</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Feature</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Citation mode toggle</td>
+<td>2 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>1</td>
+<td>NY statute database (CPL, PL, DRL, FCA)</td>
+<td>3 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>2</td>
+<td>CourtListener API integration</td>
+<td>4 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Case context injection to Copilot</td>
+<td>2 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Document vault (upload, store, organize)</td>
+<td>5 days</td>
+<td>Critical</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Document OCR + full-text search</td>
+<td>5 days</td>
+<td>Critical</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverable:</strong> Users can upload documents, search
+them, and get AI responses with legal citations.</p>
+<h3 id="phase-2-practice-workflows-weeks-5-8">Phase 2: Practice
+Workflows (Weeks 5-8)</h3>
+<p><strong>Goal:</strong> Guided workflows for each practice area</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Feature</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>Criminal arraignment workflow</td>
+<td>4 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Criminal discovery tracker</td>
+<td>3 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Custody intake workflow</td>
+<td>4 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Custody petition drafter</td>
+<td>3 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Expand divorce workflow</td>
+<td>3 days</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Financial discovery organizer</td>
+<td>4 days</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Motion template library</td>
+<td>5 days</td>
+<td>High</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverable:</strong> Complete guided workflows for criminal,
+custody, and divorce matters.</p>
+<h3 id="phase-3-intelligence-weeks-9-12">Phase 3: Intelligence (Weeks
+9-12)</h3>
+<p><strong>Goal:</strong> Make the system smart about your cases</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Feature</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9</td>
+<td>Document analysis (“review tables”)</td>
+<td>5 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Chronology builder</td>
+<td>3 days</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Case memory system</td>
+<td>5 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Cross-case search</td>
+<td>2 days</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Calendar + deadline tracking</td>
+<td>5 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>12</td>
+<td>Judge intelligence database</td>
+<td>5 days</td>
+<td>Medium</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverable:</strong> AI remembers case context, analyzes
+documents at scale, tracks deadlines.</p>
+<h3 id="phase-4-mobile-scale-weeks-13-16">Phase 4: Mobile &amp; Scale
+(Weeks 13-16)</h3>
+<p><strong>Goal:</strong> Accessible anywhere, production-ready</p>
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Feature</th>
+<th>Effort</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>13-14</td>
+<td>Mobile app (React Native)</td>
+<td>10 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Advanced voucher analytics</td>
+<td>5 days</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Multi-attorney collaboration</td>
+<td>3 days</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Performance optimization</td>
+<td>5 days</td>
+<td>High</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Security audit + hardening</td>
+<td>3 days</td>
+<td>Critical</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deliverable:</strong> Production-ready platform with mobile
+app.</p>
+<hr />
+<h2 id="business-model">Business Model &amp; Pricing</h2>
+<h3 id="pricing-strategy">Pricing Strategy</h3>
+<table>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 30%" />
+<col style="width: 43%" />
+</colgroup>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Price</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Basic</strong></td>
+<td>$49/mo</td>
+<td>Copilot, 1 workflow, 5GB docs, basic voucher</td>
+</tr>
+<tr>
+<td><strong>Professional</strong></td>
+<td>$79/mo</td>
+<td>All workflows, 25GB docs, full voucher suite, calendar</td>
+</tr>
+<tr>
+<td><strong>Unlimited</strong></td>
+<td>$99/mo</td>
+<td>Everything + priority support, unlimited docs, API access</td>
+</tr>
+</tbody>
+</table>
+<h3 id="why-this-pricing-works">Why This Pricing Works</h3>
+<ul>
+<li><strong>Comparable to:</strong> Netflix ($15) + Spotify ($10) +
+cloud storage ($10) = $35</li>
+<li><strong>Value delivered:</strong> 10+ hours saved/month × $75/hr =
+$750 value</li>
+<li><strong>Competition:</strong> Harvey at $500+/mo, even basic legal
+software is $100+/mo</li>
+<li><strong>Break-even:</strong> ~500 subscribers at $79 avg = $39,500
+MRR</li>
+</ul>
+<h3 id="revenue-projections">Revenue Projections</h3>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Subscribers</th>
+<th>MRR</th>
+<th>ARR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Y1</td>
+<td>500</td>
+<td>$40K</td>
+<td>$480K</td>
+</tr>
+<tr>
+<td>Y2</td>
+<td>2,000</td>
+<td>$160K</td>
+<td>$1.9M</td>
+</tr>
+<tr>
+<td>Y3</td>
+<td>5,000</td>
+<td>$400K</td>
+<td>$4.8M</td>
+</tr>
+</tbody>
+</table>
+<h3 id="distribution-channels">Distribution Channels</h3>
+<ol type="1">
+<li><strong>NYC Bar Association</strong> - Partnership for member
+discount</li>
+<li><strong>18B Panel Administrators</strong> - Direct outreach</li>
+<li><strong>Legal Aid Society</strong> - Referral program</li>
+<li><strong>CLE Programs</strong> - Demo at continuing education</li>
+<li><strong>Word of mouth</strong> - Referral incentives</li>
+</ol>
+<hr />
+<h2 id="success-metrics">Success Metrics</h2>
+<h3 id="product-metrics">Product Metrics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target (6 mo)</th>
+<th>Target (12 mo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Monthly Active Users</td>
+<td>200</td>
+<td>1,000</td>
+</tr>
+<tr>
+<td>Cases Created</td>
+<td>2,000</td>
+<td>15,000</td>
+</tr>
+<tr>
+<td>Documents Uploaded</td>
+<td>10,000</td>
+<td>100,000</td>
+</tr>
+<tr>
+<td>AI Queries/Day</td>
+<td>500</td>
+<td>5,000</td>
+</tr>
+<tr>
+<td>Vouchers Processed</td>
+<td>1,000</td>
+<td>10,000</td>
+</tr>
+</tbody>
+</table>
+<h3 id="user-outcomes">User Outcomes</h3>
+<table>
+<thead>
+<tr>
+<th>Outcome</th>
+<th>Measurement</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Time saved per week</td>
+<td>User survey</td>
+<td>5+ hours</td>
+</tr>
+<tr>
+<td>Voucher acceptance rate</td>
+<td>Track rejections</td>
+<td>95%+</td>
+</tr>
+<tr>
+<td>Payment velocity</td>
+<td>Days to payment</td>
+<td>-20%</td>
+</tr>
+<tr>
+<td>User satisfaction</td>
+<td>NPS score</td>
+<td>50+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="technical-metrics">Technical Metrics</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Uptime</td>
+<td>99.9%</td>
+</tr>
+<tr>
+<td>Page load time</td>
+<td>&lt;2 sec</td>
+</tr>
+<tr>
+<td>AI response time</td>
+<td>&lt;5 sec</td>
+</tr>
+<tr>
+<td>Document OCR accuracy</td>
+<td>95%+</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix-quick-implementation-guides">Appendix: Quick
+Implementation Guides</h2>
+<h3 id="a.-adding-citation-mode">A. Adding Citation Mode</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// lib/citationPrompt.ts</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">const</span> CITATION_SYSTEM_PROMPT <span class="op">=</span> <span class="vs">`</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="vs">You are 18B Lawyer AI, a legal assistant for 18B panel attorneys.</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="vs">CRITICAL REQUIREMENT: You MUST cite legal authority for every legal claim.</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="vs">Citation formats:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="vs">- Statutes: [CPL § 710.20] or [DRL § 236(B)(5)]</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="vs">- Cases: [People v. De Bour, 40 N.Y.2d 210 (1976)]</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="vs">- Regulations: [22 NYCRR § 1200.0]</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="vs">If you cannot find supporting authority, explicitly state:</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="vs">&quot;I cannot locate specific authority for this proposition.&quot;</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="vs">Never fabricate citations. If unsure, say so.</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="vs">`</span><span class="op">;</span></span></code></pre></div>
+<h3 id="b.-document-vault-schema">B. Document Vault Schema</h3>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Firestore structure</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ss">/users/</span>{userId}<span class="ss">/cases/</span>{caseId}<span class="ss">/documents/</span>{docId}</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  filename<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  storagePath<span class="op">:</span> <span class="dt">string</span><span class="op">,</span>  <span class="co">// Firebase Storage reference</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  uploadedAt<span class="op">:</span> Timestamp<span class="op">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  fileSize<span class="op">:</span> <span class="dt">number</span><span class="op">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  mimeType<span class="op">:</span> <span class="dt">string</span><span class="op">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  ocrComplete<span class="op">:</span> <span class="dt">boolean</span><span class="op">,</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  ocrText<span class="op">:</span> <span class="dt">string</span> <span class="op">|</span> <span class="dt">null</span><span class="op">,</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  privilegeCheck<span class="op">:</span> {</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    status<span class="op">:</span> <span class="st">&#39;pending&#39;</span> <span class="op">|</span> <span class="st">&#39;safe&#39;</span> <span class="op">|</span> <span class="st">&#39;privileged&#39;</span> <span class="op">|</span> <span class="st">&#39;review&#39;</span><span class="op">,</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    type<span class="op">:</span> PrivilegeType <span class="op">|</span> <span class="dt">null</span><span class="op">,</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    checkedAt<span class="op">:</span> Timestamp</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>  phiCheck<span class="op">:</span> {</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    status<span class="op">:</span> <span class="st">&#39;pending&#39;</span> <span class="op">|</span> <span class="st">&#39;clean&#39;</span> <span class="op">|</span> <span class="st">&#39;redacted&#39;</span><span class="op">,</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    foundCount<span class="op">:</span> <span class="dt">number</span><span class="op">,</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    checkedAt<span class="op">:</span> Timestamp</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>  }<span class="op">,</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  tags<span class="op">:</span> <span class="dt">string</span>[]<span class="op">,</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  summary<span class="op">:</span> <span class="dt">string</span> <span class="op">|</span> <span class="dt">null</span>  <span class="co">// AI-generated</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<h3 id="c.-courtlistener-integration">C. CourtListener Integration</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode typescript"><code class="sourceCode typescript"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// lib/courtListener.ts</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> COURTLISTENER_API <span class="op">=</span> <span class="st">&#39;https://www.courtlistener.com/api/rest/v3&#39;</span><span class="op">;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">async</span> <span class="kw">function</span> <span class="fu">searchCases</span>(query<span class="op">:</span> <span class="dt">string</span><span class="op">,</span> jurisdiction<span class="op">:</span> <span class="dt">string</span> <span class="op">=</span> <span class="st">&#39;ny&#39;</span>) {</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> response <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="vs">`</span><span class="sc">${</span>COURTLISTENER_API<span class="sc">}</span><span class="vs">/search/?q=</span><span class="sc">${</span><span class="pp">encodeURIComponent</span>(query)<span class="sc">}</span><span class="vs">&amp;court=</span><span class="sc">${</span>jurisdiction<span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>      headers<span class="op">:</span> {</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&#39;Authorization&#39;</span><span class="op">:</span> <span class="vs">`Token </span><span class="sc">${</span><span class="bu">process</span><span class="op">.</span><span class="at">env</span><span class="op">.</span><span class="at">COURTLISTENER_API_KEY</span><span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>  )<span class="op">;</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> response<span class="op">.</span><span class="fu">json</span>()<span class="op">;</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="im">export</span> <span class="kw">async</span> <span class="kw">function</span> <span class="fu">getCaseById</span>(id<span class="op">:</span> <span class="dt">string</span>) {</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> response <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="vs">`</span><span class="sc">${</span>COURTLISTENER_API<span class="sc">}</span><span class="vs">/opinions/</span><span class="sc">${</span>id<span class="sc">}</span><span class="vs">/`</span>)<span class="op">;</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> response<span class="op">.</span><span class="fu">json</span>()<span class="op">;</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<hr />
+<h2 id="contact-next-steps">Contact &amp; Next Steps</h2>
+<p><strong>Immediate Actions:</strong> 1. Review this document with
+development team 2. Prioritize Phase 1 features 3. Set up CourtListener
+API access 4. Begin citation mode implementation</p>
+<p><strong>Questions?</strong> Contact the product team to discuss
+priorities, technical approach, or timeline adjustments.</p>
+<hr />
+<p><em>This document is confidential and intended for internal use
+only.</em></p>
+</body>
+</html>

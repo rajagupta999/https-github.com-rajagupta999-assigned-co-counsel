@@ -1,0 +1,16 @@
+{
+  "name": "acc-agent-service",
+  "version": "1.0.0",
+  "description": "18B Lawyer — Agentic Legal Research Service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "puppeteer-core": "^23.0.0",
+    "cors": "^2.8.5",
+    "crypto-js": "^4.2.0"
+  }
+}
