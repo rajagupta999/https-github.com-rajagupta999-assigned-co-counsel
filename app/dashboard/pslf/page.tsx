@@ -124,7 +124,7 @@ export default function PSLFPage() {
                     <h3 className="font-semibold text-sm text-navy-900">Certify Your Employment</h3>
                     <p className="text-sm text-navy-700 mt-1 leading-relaxed">
                         You haven&apos;t certified your employment for 2025 yet.
-                        Use the <a href="#" className="underline font-semibold hover:text-navy-900">PSLF Help Tool</a> to generate your form.
+                        Use the <a href="https://studentaid.gov/pslf/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-navy-900">PSLF Help Tool</a> to generate your form.
                     </p>
                 </div>
             </div>

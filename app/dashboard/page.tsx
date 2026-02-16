@@ -3,745 +3,690 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
-import { mockStats, mockTasks } from '@/lib/mockData';
-import { getActiveEntry, startTimer, pauseTimer, resumeTimer, stopTimer, calcRunningDuration, formatDuration, getTimeLog, getTodayTotal, getWeekTotal, formatHoursMinutes, TimeEntry } from '@/lib/timeTracker';
+import { usePracticeMode } from '@/context/PracticeModeContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// ── Calendar Helper ──────────────────────────────────────────────
-function getCalendarDays(year: number, month: number) {
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const days: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) days.push(null);
-  for (let i = 1; i <= daysInMonth; i++) days.push(i);
-  return days;
-}
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  date: string; // YYYY-MM-DD
-  time: string;
-  color: string;
-  type: 'court' | 'meeting' | 'deadline' | 'call' | 'other';
-  caseId?: string;
-}
-
-function getStoredEvents(): CalendarEvent[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = localStorage.getItem('acc_calendar_events');
-    return stored ? JSON.parse(stored) : [];
-  } catch { return []; }
-}
-
-function storeEvents(events: CalendarEvent[]) {
-  localStorage.setItem('acc_calendar_events', JSON.stringify(events));
-}
-
-// ── Notes Storage ────────────────────────────────────────────────
-function getStoredNotes(): string {
-  if (typeof window === 'undefined') return '';
-  return localStorage.getItem('acc_dashboard_notes') || '';
-}
-
-// All premium legal databases
-const ALL_DATABASES = [
-  { key: 'westlaw', name: 'Westlaw', icon: '🔵', color: 'from-blue-600 to-blue-800', badge: 'bg-blue-100 text-blue-700', url: 'https://1.next.westlaw.com' },
-  { key: 'lexisnexis', name: 'Lexis+', icon: '🔶', color: 'from-orange-500 to-orange-700', badge: 'bg-orange-100 text-orange-700', url: 'https://plus.lexis.com' },
-  { key: 'bloomberg', name: 'Bloomberg Law', icon: '⬛', color: 'from-zinc-700 to-zinc-900', badge: 'bg-zinc-100 text-zinc-700', url: 'https://www.bloomberglaw.com' },
-  { key: 'thomson', name: 'Thomson Reuters', icon: '🔴', color: 'from-red-600 to-red-800', badge: 'bg-red-100 text-red-700', url: 'https://www.thomsonreuters.com' },
-  { key: 'heinonline', name: 'HeinOnline', icon: '📕', color: 'from-rose-600 to-rose-800', badge: 'bg-rose-100 text-rose-700', url: 'https://heinonline.org' },
-  { key: 'fastcase', name: 'Fastcase', icon: '⚡', color: 'from-yellow-500 to-yellow-700', badge: 'bg-yellow-100 text-yellow-700', url: 'https://www.fastcase.com' },
-  { key: 'vlex', name: 'vLex', icon: '🟢', color: 'from-green-600 to-green-800', badge: 'bg-green-100 text-green-700', url: 'https://vlex.com' },
-  { key: 'justcite', name: 'JustCite', icon: '🔗', color: 'from-teal-600 to-teal-800', badge: 'bg-teal-100 text-teal-700', url: 'https://www.justcite.com' },
-  { key: 'docketnav', name: 'Docket Navigator', icon: '🧭', color: 'from-cyan-600 to-cyan-800', badge: 'bg-cyan-100 text-cyan-700', url: 'https://www.docketnavigator.com' },
-  { key: 'jstor', name: 'JSTOR', icon: '🏛️', color: 'from-indigo-600 to-indigo-800', badge: 'bg-indigo-100 text-indigo-700', url: 'https://www.jstor.org' },
-  { key: 'ebsco', name: 'EBSCO Legal', icon: '📰', color: 'from-lime-600 to-lime-800', badge: 'bg-lime-100 text-lime-700', url: 'https://www.ebsco.com' },
-  { key: 'oxford', name: 'Oxford Law', icon: '🎓', color: 'from-blue-700 to-blue-900', badge: 'bg-blue-100 text-blue-700', url: 'https://academic.oup.com' },
-  { key: 'cambridge', name: 'Cambridge Law', icon: '🏫', color: 'from-violet-600 to-violet-800', badge: 'bg-violet-100 text-violet-700', url: 'https://www.cambridge.org' },
-  { key: 'proquest', name: 'ProQuest', icon: '📜', color: 'from-fuchsia-600 to-fuchsia-800', badge: 'bg-fuchsia-100 text-fuchsia-700', url: 'https://www.proquest.com' },
-  { key: 'vitallaw', name: 'VitalLaw', icon: '💊', color: 'from-pink-600 to-pink-800', badge: 'bg-pink-100 text-pink-700', url: 'https://www.vitallaw.com' },
-];
-
-const RESEARCH_SOURCES = [
-  { name: 'CourtListener', color: 'text-blue-600', icon: '⚖️' },
-  { name: 'Google Scholar', color: 'text-red-600', icon: '📚' },
-  { name: 'Fastcase', color: 'text-green-600', icon: '📗' },
-  { name: 'RECAP Archive', color: 'text-purple-600', icon: '🗂️' },
-  { name: 'NY Courts', color: 'text-orange-600', icon: '🏛️' },
-];
-
-const EVENT_TYPES = [
-  { value: 'court', label: 'Court Hearing', color: 'bg-red-500' },
-  { value: 'meeting', label: 'Meeting', color: 'bg-blue-500' },
-  { value: 'deadline', label: 'Deadline', color: 'bg-amber-500' },
-  { value: 'call', label: 'Phone Call', color: 'bg-emerald-500' },
-  { value: 'other', label: 'Other', color: 'bg-purple-500' },
-];
-
-// ── Widget Wrapper ───────────────────────────────────────────────
-function Widget({ title, icon, children, className = '', headerExtra }: {
-  title: string; icon: string; children: React.ReactNode; className?: string;
-  headerExtra?: React.ReactNode;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
+// ══════════════════════════════════════════════════════════════════
+// SHARED: SPLIT VIEW SHELL (1/3 Feed | 2/3 Main)
+// ══════════════════════════════════════════════════════════════════
+function SplitView({ feed, main }: { feed: React.ReactNode; main: React.ReactNode }) {
   return (
-    <div className={`bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col ${className}`}>
-      <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 min-h-[40px]">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm">{icon}</span>
-          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide truncate">{title}</h3>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {headerExtra}
-          <button onClick={() => setCollapsed(!collapsed)} className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded">
-            <svg className={`w-3 h-3 transition-transform ${collapsed ? '-rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M19 9l-7 7-7-7" /></svg>
-          </button>
-        </div>
-      </div>
-      {!collapsed && <div className="flex-1 overflow-auto">{children}</div>}
+    <div className="flex flex-col lg:flex-row gap-4 h-full">
+      {/* Left Feed — 1/3 */}
+      <aside className="w-full lg:w-1/3 space-y-3 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
+        {feed}
+      </aside>
+      {/* Right Main — 2/3 */}
+      <main className="w-full lg:w-2/3 space-y-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-1 scrollbar-thin">
+        {main}
+      </main>
     </div>
   );
 }
 
-// ── Main Dashboard ───────────────────────────────────────────────
-export default function DashboardPage() {
+// Shared feed card wrapper
+function FeedCard({ title, icon, children, accent = 'slate', href }: { title: string; icon: string; children: React.ReactNode; accent?: string; href?: string }) {
+  const accentMap: Record<string, string> = {
+    slate: 'border-slate-200',
+    blue: 'border-blue-200',
+    emerald: 'border-emerald-200',
+    red: 'border-red-200',
+    amber: 'border-amber-200',
+    purple: 'border-purple-200',
+  };
+  return (
+    <div className={`bg-white border ${accentMap[accent] || accentMap.slate} rounded-xl shadow-sm`}>
+      <div className="px-3 py-2.5 border-b border-slate-100 flex items-center justify-between">
+        <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+          <span>{icon}</span>{title}
+        </h3>
+        {href && <Link href={href} className="text-[10px] font-semibold text-blue-600 hover:text-blue-800">View →</Link>}
+      </div>
+      <div>{children}</div>
+    </div>
+  );
+}
+
+function FeedItem({ icon, text, sub, urgent }: { icon?: string; text: string; sub: string; urgent?: boolean }) {
+  return (
+    <div className="px-3 py-2.5 flex items-start gap-2.5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+      {urgent && <span className="mt-1 w-2 h-2 rounded-full bg-red-500 shrink-0 animate-pulse" />}
+      {icon && !urgent && <span className="text-sm shrink-0">{icon}</span>}
+      <div className="min-w-0">
+        <p className="text-xs text-slate-700 leading-snug">{text}</p>
+        <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PRO SE DASHBOARD (unchanged concept — not split view)
+// ══════════════════════════════════════════════════════════════════
+function ProSeDashboard() {
   const { cases } = useAppContext();
-  const { user } = useAuth();
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('Case Law');
-  const [msgTab, setMsgTab] = useState<'chat' | 'notes'>('chat');
-  const [noteText, setNoteText] = useState('');
-
-  // Calendar state
-  const [calEvents, setCalEvents] = useState<CalendarEvent[]>([]);
-  const [calMonth, setCalMonth] = useState(new Date().getMonth());
-  const [calYear, setCalYear] = useState(new Date().getFullYear());
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [showAddEvent, setShowAddEvent] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', time: '09:00', type: 'court' as CalendarEvent['type'] });
-
-  // File upload
-  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: string; date: string }[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // My Databases
-  const [pinnedDbs, setPinnedDbs] = useState<string[]>([]);
-  const [showDbPicker, setShowDbPicker] = useState(false);
-  const [dbSearch, setDbSearch] = useState('');
-  const [dbQuickSearch, setDbQuickSearch] = useState<Record<string, string>>({});
-
-  // Messages from Lex
-  const [lexMessages, setLexMessages] = useState<{ sender: string; text: string; time: string }[]>([]);
-
-  // Load from localStorage
-  useEffect(() => {
-    setCalEvents(getStoredEvents());
-    setNoteText(getStoredNotes());
-
-    // Load uploaded files list
-    try {
-      const files = localStorage.getItem('acc_uploaded_files');
-      if (files) setUploadedFiles(JSON.parse(files));
-    } catch {}
-
-    // Load pinned databases
-    const saved = localStorage.getItem('acc_pinned_databases');
-    if (saved) setPinnedDbs(JSON.parse(saved));
-    const creds = localStorage.getItem('acc_agentic_creds');
-    if (creds) {
-      const parsed = JSON.parse(creds);
-      const connectedKeys = Object.keys(parsed);
-      if (connectedKeys.length > 0) {
-        setPinnedDbs(prev => {
-          const merged = [...new Set([...prev, ...connectedKeys])];
-          localStorage.setItem('acc_pinned_databases', JSON.stringify(merged));
-          return merged;
-        });
-      }
-    }
-
-    // Load recent Lex messages
-    try {
-      const hist = localStorage.getItem('acc_paralegal_history_default');
-      if (hist) {
-        const msgs = JSON.parse(hist).slice(-4).map((m: any) => ({
-          sender: m.role === 'user' ? 'You' : 'Lex',
-          text: m.content.substring(0, 120) + (m.content.length > 120 ? '...' : ''),
-          time: new Date(m.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-        }));
-        setLexMessages(msgs);
-      }
-    } catch {}
-  }, []);
-
-  // Save notes on change
-  useEffect(() => {
-    if (noteText !== undefined) localStorage.setItem('acc_dashboard_notes', noteText);
-  }, [noteText]);
-
-  const togglePinDb = (key: string) => {
-    setPinnedDbs(prev => {
-      const updated = prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key];
-      localStorage.setItem('acc_pinned_databases', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  // Calendar helpers
-  const calDays = getCalendarDays(calYear, calMonth);
-  const monthName = new Date(calYear, calMonth).toLocaleString('default', { month: 'long', year: 'numeric' });
-  const getEventsForDay = (day: number) => {
-    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return calEvents.filter(e => e.date === dateStr);
-  };
-
-  const addCalendarEvent = () => {
-    if (!newEvent.title.trim() || selectedDay === null) return;
-    const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
-    const eventType = EVENT_TYPES.find(t => t.value === newEvent.type) || EVENT_TYPES[0];
-    const event: CalendarEvent = {
-      id: `evt_${Date.now()}`,
-      title: newEvent.title.trim(),
-      date: dateStr,
-      time: newEvent.time,
-      color: eventType.color,
-      type: newEvent.type,
-    };
-    const updated = [...calEvents, event];
-    setCalEvents(updated);
-    storeEvents(updated);
-    setNewEvent({ title: '', time: '09:00', type: 'court' });
-    setShowAddEvent(false);
-  };
-
-  const deleteCalendarEvent = (id: string) => {
-    const updated = calEvents.filter(e => e.id !== id);
-    setCalEvents(updated);
-    storeEvents(updated);
-  };
-
-  // File upload handler
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const newFiles = Array.from(files).map(f => ({
-      name: f.name,
-      size: f.size < 1024 ? `${f.size} B` : f.size < 1048576 ? `${(f.size / 1024).toFixed(1)} KB` : `${(f.size / 1048576).toFixed(1)} MB`,
-      date: new Date().toLocaleDateString(),
-    }));
-    const updated = [...newFiles, ...uploadedFiles].slice(0, 20);
-    setUploadedFiles(updated);
-    localStorage.setItem('acc_uploaded_files', JSON.stringify(updated));
-    e.target.value = '';
-  };
-
-  // Search handler
-  const handleSearch = () => {
-    if (!searchQuery.trim()) return;
-    router.push(`/dashboard/research?q=${encodeURIComponent(searchQuery)}`);
-  };
-
-  // Timer state
-  const [timerEntry, setTimerEntry] = useState<TimeEntry | null>(null);
-  const [timerDisplay, setTimerDisplay] = useState('00:00:00');
-  const [timerDesc, setTimerDesc] = useState('');
-  const [showTimeLog, setShowTimeLog] = useState(false);
-  const [timeLog, setTimeLog] = useState<TimeEntry[]>([]);
-
-  useEffect(() => {
-    const active = getActiveEntry();
-    if (active) setTimerEntry(active);
-    setTimeLog(getTimeLog());
-  }, []);
-
-  useEffect(() => {
-    if (!timerEntry || timerEntry.status === 'stopped') return;
-    const tick = () => {
-      const active = getActiveEntry();
-      if (active) setTimerDisplay(formatDuration(calcRunningDuration(active)));
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, [timerEntry]);
-
-  const handleStartTimer = useCallback(() => {
-    const desc = timerDesc.trim() || 'General work';
-    const entry = startTimer(desc);
-    setTimerEntry(entry);
-    setTimerDesc('');
-  }, [timerDesc]);
-  const handlePauseTimer = useCallback(() => { const e = pauseTimer(); setTimerEntry(e ? { ...e } : null); }, []);
-  const handleResumeTimer = useCallback(() => { const e = resumeTimer(); setTimerEntry(e ? { ...e } : null); }, []);
-  const handleStopTimer = useCallback(() => { stopTimer(); setTimerEntry(null); setTimerDisplay('00:00:00'); setTimeLog(getTimeLog()); }, []);
-
   const openCases = cases.filter(c => c.status === 'Open');
-  const now = new Date();
-  const firstName = user?.name.split(' ')[0] || 'Counselor';
-  const searchTabs = ['Case Law', 'Statutes', 'Regulations', 'Briefs', 'Journals', 'Forms'];
+  const activeCaseName = openCases.length > 0 ? `${openCases[0].client} — ${openCases[0].charges}` : 'No active case';
 
-  // Upcoming events (next 7 days)
-  const upcomingEvents = calEvents
-    .filter(e => { const d = new Date(e.date); const diff = (d.getTime() - now.getTime()) / 86400000; return diff >= 0 && diff <= 7; })
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const steps = ['Filing', 'Served', 'Response', 'Discovery', 'Trial', 'Resolution'];
+  const currentStep = 2;
+
+  const [checklist, setChecklist] = useState([
+    { id: 1, text: 'File your response by March 1st', done: false },
+    { id: 2, text: 'Gather your evidence (photos, texts, emails)', done: false },
+    { id: 3, text: 'Write down your side of the story', done: true },
+    { id: 4, text: 'Prepare for your hearing on March 15th', done: false },
+    { id: 5, text: 'Make copies of all documents (3 sets)', done: false },
+  ]);
+
+  const tips = [
+    "💡 Tip: Always keep copies of everything you file with the court.",
+    "💡 Tip: Arrive at court 30 minutes early and dress professionally.",
+    "💡 Tip: You can ask the court clerk questions — they're there to help!",
+    "💡 Tip: Write down what you want to say before your hearing.",
+    "💡 Tip: If you don't understand something, it's okay to ask the judge to explain.",
+  ];
+  const tipOfDay = tips[new Date().getDate() % tips.length];
+
+  const toggleCheck = (id: number) => {
+    setChecklist(prev => prev.map(item => item.id === id ? { ...item, done: !item.done } : item));
+  };
 
   return (
-    <div className="p-3 sm:p-4 lg:p-5 max-w-[1600px] mx-auto space-y-3 animate-fade-in pb-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">Mission Control</h1>
-          <p className="text-xs text-slate-400">Welcome back, {firstName}</p>
-        </div>
-        <Link href="/dashboard/cases/new" className="flex items-center gap-1.5 bg-navy-900 hover:bg-navy-800 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          New Case
-        </Link>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6 animate-fade-in pb-10">
+      <div>
+        <h1 className="text-2xl font-bold text-amber-900">Welcome Back 👋</h1>
+        <p className="text-sm text-amber-700 mt-1">Here&apos;s where things stand with your case. You&apos;re doing great!</p>
       </div>
 
-      {/* Universal Search — functional */}
-      <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3">
-        <div className="flex gap-2 mb-2">
-          <div className="flex-1 relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              placeholder="Search cases, statutes, case law — press Enter or click Search..."
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20"
-            />
-          </div>
-          <button onClick={handleSearch} className="px-4 py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            Search
-          </button>
-        </div>
-        <div className="flex gap-1 overflow-x-auto">
-          {searchTabs.map(tab => (
-            <button key={tab} onClick={() => { setActiveTab(tab); router.push(`/dashboard/research?tab=${encodeURIComponent(tab)}`); }}
-              className={`px-3 py-1 text-[11px] font-medium rounded-md whitespace-nowrap transition-colors ${activeTab === tab ? 'bg-navy-900 text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
-            >{tab}</button>
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-6 shadow-sm">
+        <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">Your Active Case</p>
+        <h2 className="text-lg font-bold text-amber-950 mb-6">{activeCaseName}</h2>
+        <div className="flex items-center justify-between relative">
+          <div className="absolute top-4 left-0 right-0 h-1 bg-amber-200 rounded-full" />
+          <div className="absolute top-4 left-0 h-1 bg-amber-500 rounded-full transition-all duration-500" style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }} />
+          {steps.map((step, i) => (
+            <div key={step} className="relative flex flex-col items-center z-10">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                i < currentStep ? 'bg-amber-500 border-amber-500 text-white' :
+                i === currentStep ? 'bg-white border-amber-500 text-amber-700 ring-4 ring-amber-100' :
+                'bg-white border-amber-200 text-amber-300'
+              }`}>
+                {i < currentStep ? '✓' : i + 1}
+              </div>
+              <span className={`text-[10px] mt-2 font-medium ${i <= currentStep ? 'text-amber-800' : 'text-amber-300'}`}>{step}</span>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Upcoming Events Banner */}
-      {upcomingEvents.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex items-center gap-3 overflow-x-auto">
-          <span className="text-xs font-bold text-amber-700 shrink-0">📅 Upcoming:</span>
-          {upcomingEvents.slice(0, 3).map(e => (
-            <span key={e.id} className="text-xs text-amber-600 whitespace-nowrap">
-              <span className={`inline-block w-2 h-2 rounded-full ${e.color} mr-1`}></span>
-              {e.title} ({new Date(e.date + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} {e.time})
-            </span>
+      <div className="bg-white border border-amber-200 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-base font-bold text-amber-900 mb-4">📋 What to Do Next</h3>
+        <div className="space-y-3">
+          {checklist.map(item => (
+            <label key={item.id} className="flex items-start gap-3 cursor-pointer group p-2 rounded-lg hover:bg-amber-50 transition-colors">
+              <input type="checkbox" checked={item.done} onChange={() => toggleCheck(item.id)} className="mt-0.5 h-5 w-5 rounded-md border-amber-300 text-amber-600 focus:ring-amber-500/30" />
+              <span className={`text-sm ${item.done ? 'text-amber-400 line-through' : 'text-amber-900 group-hover:text-amber-700'}`}>{item.text}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Link href="/dashboard/copilot" className="flex items-center gap-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl p-4 transition-colors shadow-sm">
+          <span className="text-2xl">💬</span>
+          <div><p className="font-bold text-sm">Talk to Legal Helper</p><p className="text-xs text-amber-100">Get answers in plain English</p></div>
+        </Link>
+        <Link href="/dashboard/research" className="flex items-center gap-3 bg-orange-100 hover:bg-orange-200 text-orange-900 rounded-xl p-4 transition-colors shadow-sm border border-orange-200">
+          <span className="text-2xl">📝</span>
+          <div><p className="font-bold text-sm">Find a Form</p><p className="text-xs text-orange-600">Court forms & templates</p></div>
+        </Link>
+        <Link href="/dashboard/court-schedules" className="flex items-center gap-3 bg-orange-100 hover:bg-orange-200 text-orange-900 rounded-xl p-4 transition-colors shadow-sm border border-orange-200">
+          <span className="text-2xl">📅</span>
+          <div><p className="font-bold text-sm">Check Court Dates</p><p className="text-xs text-orange-600">See upcoming hearings</p></div>
+        </Link>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <p className="text-sm text-amber-800">{tipOfDay}</p>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ASSIGNED COUNSEL — SPLIT VIEW
+// Feed: Voucher status, Court Part updates, Panel Admin alerts
+// Main: Active Cases, Quick Actions (New Voucher), Daily Calendar
+// ══════════════════════════════════════════════════════════════════
+function AssignedCounselDashboard() {
+  const { cases } = useAppContext();
+  const { user } = useAuth();
+  const openCases = cases.filter(c => c.status === 'Open');
+  const firstName = user?.name.split(' ')[0] || 'Counselor';
+
+  // --- FEED DATA ---
+  const voucherUpdates = [
+    { text: 'Voucher #V-2024-0341 approved — $1,850', sub: 'People v. Chen · Paid to direct deposit', icon: '✅' },
+    { text: 'Voucher #V-2024-0355 pending review', sub: 'People v. Martinez · Submitted Feb 12', icon: '⏳' },
+    { text: 'Voucher #V-2024-0360 needs correction', sub: 'Matter of Davis · Missing time entries for 2/8', icon: '⚠️', urgent: true },
+    { text: 'Approaching fee cap — People v. Thompson', sub: '85% of misdemeanor cap ($4,400/$5,200)', icon: '📊', urgent: true },
+  ];
+
+  const courtPartUpdates = [
+    { text: 'Part 32 — Calendar delayed 30 min', sub: 'Judge Williams running late · Updated 8:45 AM', icon: '🔔', urgent: true },
+    { text: 'Part 15 — Conference rescheduled to 2:30 PM', sub: 'People v. Chen · Was 2:00 PM', icon: '📋' },
+    { text: 'Part F — Now accepting walk-in conferences', sub: 'Family Court, Queens · Today only', icon: '🏛️' },
+    { text: 'Part 71 — Trial ready, jury selection Feb 27', sub: 'People v. Thompson · No adjournments', icon: '⚖️' },
+  ];
+
+  const panelAlerts = [
+    { text: 'CLE Requirement: 2 credits remaining', sub: 'Due Mar 15 · Ethics category', icon: '📚' },
+    { text: 'Panel meeting: Feb 25, 6:00 PM', sub: 'Queens Bar Association · Mandatory attendance', icon: '📌', urgent: true },
+    { text: 'New rate increase effective March 1', sub: 'In-court: $158/hr → $164/hr · Out-of-court: $114/hr → $119/hr', icon: '💵' },
+    { text: 'Annual recertification due April 1', sub: 'Submit updated insurance + good standing cert', icon: '📄' },
+  ];
+
+  // --- MAIN DATA ---
+  const activeCases = [
+    { client: 'Martinez, Carlos', charges: 'Assault 2nd (Felony)', court: 'Supreme Court, Queens', next: 'Feb 18 · 9:30 AM', status: 'Motion pending', urgent: true },
+    { client: 'Chen, Wei', charges: 'DWI', court: 'Criminal Court, Queens', next: 'Feb 20 · 2:00 PM', status: 'Plea negotiations', urgent: false },
+    { client: 'Davis, Tamika', charges: 'Custody/Visitation', court: 'Family Court, Queens', next: 'Feb 24 · 10:00 AM', status: 'Hearing scheduled', urgent: false },
+    { client: 'Thompson, James', charges: 'Burglary 3rd (Felony)', court: 'Supreme Court, Brooklyn', next: 'Feb 27 · 9:00 AM', status: 'Trial ready', urgent: true },
+    { client: 'Jackson, Aisha', charges: 'Petit Larceny', court: 'Criminal Court, Bronx', next: 'Mar 3 · 11:00 AM', status: 'Plea offer extended', urgent: false },
+  ];
+
+  const todayCalendar = [
+    { time: '9:00 AM', event: 'Client call — Thompson (trial prep)', type: 'call' },
+    { time: '9:30 AM', event: 'People v. Martinez — Part 32 (Hearing)', type: 'court' },
+    { time: '11:00 AM', event: 'Draft motion to suppress — Martinez', type: 'task' },
+    { time: '1:00 PM', event: 'Lunch / Travel to Brooklyn', type: 'break' },
+    { time: '2:30 PM', event: 'People v. Chen — Part 15 (Conference)', type: 'court' },
+    { time: '4:00 PM', event: 'Voucher prep — Chen, Davis', type: 'admin' },
+  ];
+
+  const newAssignments = [
+    { id: 'ASG-2024-0891', client: 'Rodriguez, Maria', charges: 'Petit Larceny', court: 'Criminal Court, Queens' },
+    { id: 'ASG-2024-0894', client: 'Williams, Deshawn', charges: 'Assault 3rd', court: 'Criminal Court, Brooklyn' },
+  ];
+
+  const feed = (
+    <>
+      {/* Voucher Status */}
+      <FeedCard title="Voucher Status" icon="💵" accent="emerald" href="/dashboard/vouchers">
+        {voucherUpdates.map((v, i) => <FeedItem key={i} {...v} />)}
+      </FeedCard>
+
+      {/* Court Part Updates */}
+      <FeedCard title="Court Part Updates" icon="🏛️" accent="blue" href="/dashboard/court-schedules">
+        {courtPartUpdates.map((c, i) => <FeedItem key={i} {...c} />)}
+      </FeedCard>
+
+      {/* Panel Admin Alerts */}
+      <FeedCard title="Panel Admin Alerts" icon="📋" accent="amber">
+        {panelAlerts.map((a, i) => <FeedItem key={i} {...a} />)}
+      </FeedCard>
+    </>
+  );
+
+  const mainContent = (
+    <>
+      {/* Header + Quick Actions */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Practice Dashboard</h1>
+          <p className="text-xs text-slate-500">{firstName} · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/dashboard/vouchers" className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors">
+            💵 New Voucher
+          </Link>
+          <Link href="/dashboard/cases/new" className="flex items-center gap-1.5 bg-blue-700 hover:bg-blue-800 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors">
+            + Assignment
+          </Link>
+        </div>
+      </div>
+
+      {/* New Assignments Banner */}
+      {newAssignments.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+          <p className="text-xs font-bold text-amber-800 mb-2">📥 {newAssignments.length} New Assignments Awaiting Acceptance</p>
+          {newAssignments.map(a => (
+            <div key={a.id} className="flex items-center justify-between py-2 border-t border-amber-100 first:border-0">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">{a.client} — {a.charges}</p>
+                <p className="text-[10px] text-slate-500">{a.court} · <span className="font-mono">{a.id}</span></p>
+              </div>
+              <div className="flex gap-1.5">
+                <button className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold rounded-md transition-colors">Accept</button>
+                <button className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-semibold rounded-md transition-colors">Decline</button>
+              </div>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-
-        {/* === COLUMN 1 === */}
-        <div className="space-y-3">
-          {/* File Upload — functional */}
-          <Widget title="File Upload" icon="📁">
-            <div className="p-3 space-y-2">
-              <input ref={fileInputRef} type="file" multiple accept=".pdf,.doc,.docx,.txt,.csv,.xlsx" className="hidden" onChange={handleFileUpload} />
-              <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" /></svg>
-                Upload Documents
-              </button>
-              {uploadedFiles.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-2">No files uploaded yet</p>
-              ) : (
-                <div className="space-y-1 max-h-[120px] overflow-auto">
-                  {uploadedFiles.map((f, i) => (
-                    <div key={i} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-slate-50 text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span>📄</span><span className="truncate text-slate-600">{f.name}</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 shrink-0 ml-2">{f.size}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Widget>
-
-          {/* Cases Overview */}
-          <Widget title="Cases Overview" icon="👥" headerExtra={<Link href="/dashboard/cases" className="text-[10px] text-navy-700 hover:text-navy-900 font-semibold">All Cases</Link>}>
-            <div className="divide-y divide-slate-50">
-              {openCases.slice(0, 5).map(c => (
-                <Link key={c.id} href={`/dashboard/cases/${c.id}`} className="flex items-center justify-between px-3 py-2 hover:bg-slate-50 transition-colors">
-                  <span className="text-xs text-slate-700 font-medium truncate mr-2">{c.client}</span>
-                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${c.status === 'Open' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{c.status}</span>
-                </Link>
-              ))}
-              {openCases.length === 0 && <p className="p-3 text-xs text-slate-400 text-center">No active cases</p>}
-            </div>
-          </Widget>
-
-          {/* Billing & Hours */}
-          <Widget title="Billing & Hours" icon="💰">
-            <div className="p-3 space-y-3">
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                <span className="text-xs text-slate-500">Today:</span>
-                <span className="text-sm font-bold text-slate-800">{formatHoursMinutes(getTodayTotal())}</span>
-                <span className="text-xs text-slate-400">|</span>
-                <span className="text-xs text-slate-500">Week:</span>
-                <span className="text-sm font-bold text-slate-800">{formatHoursMinutes(getWeekTotal())}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" /></svg>
-                <span className="text-xs text-slate-500">Pending Vouchers:</span>
-                <span className="text-sm font-bold text-amber-600">{mockStats.pendingVouchers}</span>
-              </div>
-              <Link href="/dashboard/vouchers" className="block w-full py-2 bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold rounded-lg transition-colors text-center">
-                Submit Voucher
-              </Link>
-            </div>
-          </Widget>
+      {/* Active Cases */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-800">📂 Active Cases ({activeCases.length})</h3>
+          <Link href="/dashboard/cases" className="text-[10px] font-semibold text-blue-600 hover:text-blue-800">All Cases →</Link>
         </div>
-
-        {/* === COLUMN 2 === */}
-        <div className="space-y-3">
-          {/* Calendar — fully functional */}
-          <Widget title={monthName} icon="📅"
-            headerExtra={
-              <div className="flex items-center gap-1">
-                <button onClick={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(m => m - 1); }} className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded text-xs">←</button>
-                <button onClick={() => { setCalMonth(now.getMonth()); setCalYear(now.getFullYear()); }} className="text-[9px] text-navy-700 hover:text-navy-900 font-semibold">Today</button>
-                <button onClick={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(m => m + 1); }} className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded text-xs">→</button>
+        <div className="divide-y divide-slate-50">
+          {activeCases.map((c, i) => (
+            <div key={i} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+              {c.urgent && <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 animate-pulse" />}
+              {!c.urgent && <span className="w-2 h-2 rounded-full bg-slate-300 shrink-0" />}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">{c.client}</p>
+                <p className="text-[10px] text-slate-500">{c.charges} · {c.court}</p>
               </div>
-            }
-          >
-            <div className="p-2">
-              <div className="grid grid-cols-7 gap-0 text-center mb-1">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                  <div key={d} className="text-[9px] font-bold text-slate-400 py-1">{d}</div>
-                ))}
+              <div className="text-right shrink-0">
+                <p className="text-[10px] font-bold text-blue-700">{c.next}</p>
+                <p className="text-[10px] text-slate-400">{c.status}</p>
               </div>
-              <div className="grid grid-cols-7 gap-0">
-                {calDays.map((day, i) => {
-                  const events = day ? getEventsForDay(day) : [];
-                  const isToday = day === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear();
-                  const isSelected = day === selectedDay;
-                  return (
-                    <div key={i}
-                      onClick={() => { if (day) { setSelectedDay(day === selectedDay ? null : day); setShowAddEvent(false); } }}
-                      className={`relative py-1 text-center min-h-[28px] ${day ? 'cursor-pointer hover:bg-slate-50 rounded' : ''} ${isSelected ? 'bg-navy-50 ring-1 ring-navy-300 rounded' : ''}`}
-                    >
-                      {day && (
-                        <>
-                          <span className={`text-[10px] ${isToday ? 'bg-navy-900 text-white w-5 h-5 rounded-full inline-flex items-center justify-center font-bold' : 'text-slate-600'}`}>{day}</span>
-                          {events.slice(0, 2).map((ev, j) => (
-                            <div key={j} className={`${ev.color} text-white text-[7px] rounded px-0.5 mt-0.5 truncate leading-tight`} title={`${ev.title} ${ev.time}`}>
-                              {ev.title.split(' ').slice(0, 2).join(' ')}
-                            </div>
-                          ))}
-                          {events.length > 2 && <div className="text-[7px] text-slate-400">+{events.length - 2}</div>}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Selected day detail */}
-              {selectedDay !== null && (
-                <div className="mt-2 border-t border-slate-100 pt-2">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-slate-700">
-                      {new Date(calYear, calMonth, selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                    </span>
-                    <button onClick={() => setShowAddEvent(!showAddEvent)} className="text-[10px] font-semibold text-navy-700 hover:text-navy-900">
-                      {showAddEvent ? 'Cancel' : '+ Add'}
-                    </button>
-                  </div>
-
-                  {showAddEvent && (
-                    <div className="space-y-1.5 mb-2 bg-slate-50 rounded-lg p-2">
-                      <input value={newEvent.title} onChange={e => setNewEvent(p => ({ ...p, title: e.target.value }))} placeholder="Event title..." className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-navy-500/20" onKeyDown={e => e.key === 'Enter' && addCalendarEvent()} />
-                      <div className="flex gap-1.5">
-                        <input type="time" value={newEvent.time} onChange={e => setNewEvent(p => ({ ...p, time: e.target.value }))} className="flex-1 text-xs border border-slate-200 rounded px-2 py-1.5" />
-                        <select value={newEvent.type} onChange={e => setNewEvent(p => ({ ...p, type: e.target.value as CalendarEvent['type'] }))} className="flex-1 text-xs border border-slate-200 rounded px-2 py-1.5">
-                          {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </select>
-                      </div>
-                      <button onClick={addCalendarEvent} className="w-full py-1.5 bg-navy-900 hover:bg-navy-800 text-white text-[10px] font-bold rounded transition-colors">Add Event</button>
-                    </div>
-                  )}
-
-                  {getEventsForDay(selectedDay).length === 0 && !showAddEvent && (
-                    <p className="text-[10px] text-slate-400">No events this day</p>
-                  )}
-                  {getEventsForDay(selectedDay).map(ev => (
-                    <div key={ev.id} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={`w-2 h-2 rounded-full ${ev.color} shrink-0`}></span>
-                        <span className="text-[10px] text-slate-700 font-medium truncate">{ev.title}</span>
-                        <span className="text-[9px] text-slate-400 shrink-0">{ev.time}</span>
-                      </div>
-                      <button onClick={() => deleteCalendarEvent(ev.id)} className="text-slate-300 hover:text-red-400 ml-1 shrink-0">
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          </Widget>
-
-          {/* Case Details */}
-          <Widget title="Case Details" icon="👤">
-            {openCases.length > 0 ? (
-              <div className="p-3 space-y-2.5">
-                <div>
-                  <p className="text-xs font-bold text-slate-800">{openCases[0].client}</p>
-                  <p className="text-[10px] text-slate-400 font-mono">{openCases[0].id}</p>
-                </div>
-                <div className="space-y-1.5">
-                  {[
-                    ['Status', openCases[0].status, 'text-emerald-600'],
-                    ['Next Hearing', openCases[0].nextCourtDate, 'text-slate-700'],
-                    ['Charges', openCases[0].charges, 'text-slate-700'],
-                    ['County', openCases[0].county, 'text-slate-700'],
-                  ].map(([label, value, color]) => (
-                    <div key={label} className="flex gap-2">
-                      <span className="text-[10px] text-slate-400 w-20 shrink-0">{label}:</span>
-                      <span className={`text-[10px] font-medium ${color}`}>{value}</span>
-                    </div>
-                  ))}
-                </div>
-                <Link href={`/dashboard/cases/${openCases[0].id}`} className="block text-center py-1.5 bg-navy-900 hover:bg-navy-800 text-white text-[10px] font-semibold rounded-lg transition-colors mt-1">
-                  Open Case
-                </Link>
-              </div>
-            ) : (
-              <p className="p-3 text-xs text-slate-400 text-center">No active cases</p>
-            )}
-          </Widget>
-
-          {/* Court Prep Checklist */}
-          <Widget title="Court Prep Checklist" icon="✅" headerExtra={<Link href="/dashboard/trial-prep" className="text-[10px] text-navy-700 hover:text-navy-900 font-semibold">Trial Prep →</Link>}>
-            <div className="p-3 space-y-2">
-              {['Prepare Deposition Questions', 'Submit Discovery Requests', 'Review Expert Report', 'Call Client for Update', 'File Motion to Suppress'].map((item, i) => (
-                <label key={i} className="flex items-center gap-2 cursor-pointer group">
-                  <input type="checkbox" defaultChecked={i < 2} className="h-3.5 w-3.5 rounded border-slate-300 text-navy-800 focus:ring-navy-500/30" />
-                  <span className={`text-xs ${i < 2 ? 'text-slate-400 line-through' : 'text-slate-700 group-hover:text-navy-800'}`}>{item}</span>
-                </label>
-              ))}
-            </div>
-          </Widget>
-        </div>
-
-        {/* === COLUMN 3 === */}
-        <div className="space-y-3">
-          {/* Quick Actions — prominent */}
-          <Widget title="Quick Actions" icon="⚡">
-            <div className="p-2 grid grid-cols-2 gap-1.5">
-              <Link href="/dashboard/copilot" className="flex flex-col items-center gap-1 px-2 py-2.5 bg-navy-900 hover:bg-navy-800 text-white rounded-lg text-[10px] font-medium transition-colors text-center">
-                <span className="text-lg">🤖</span>Co-Pilot AI
-              </Link>
-              <Link href="/dashboard/agent" className="flex flex-col items-center gap-1 px-2 py-2.5 bg-gradient-to-br from-[#D4AF37] to-[#b8941f] hover:opacity-90 text-white rounded-lg text-[10px] font-medium transition-colors text-center">
-                <span className="text-lg">⚖️</span>Ask Lex
-              </Link>
-              <Link href="/dashboard/research" className="flex flex-col items-center gap-1 px-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
-                <span className="text-lg">🔍</span>Research
-              </Link>
-              <Link href="/dashboard/trial-prep" className="flex flex-col items-center gap-1 px-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
-                <span className="text-lg">⚔️</span>Trial Prep
-              </Link>
-              <Link href="/dashboard/wiki" className="flex flex-col items-center gap-1 px-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
-                <span className="text-lg">📖</span>Wiki
-              </Link>
-              <Link href="/dashboard/intel" className="flex flex-col items-center gap-1 px-2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
-                <span className="text-lg">📰</span>Legal Intel
-              </Link>
-            </div>
-          </Widget>
-
-          {/* PSLF Progress */}
-          <Widget title="PSLF Progress" icon="🎓">
-            <div className="p-3 space-y-2">
-              <div className="flex items-end justify-between">
-                <span className="text-2xl font-bold text-slate-900">{mockStats.pslfProgress}%</span>
-                <span className="text-[10px] text-slate-400">98/120 payments</span>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                <div className="bg-gradient-to-r from-navy-800 to-gold-500 h-2 rounded-full" style={{ width: `${mockStats.pslfProgress}%` }} />
-              </div>
-              <Link href="/dashboard/pslf" className="text-[10px] text-navy-700 hover:text-navy-900 font-semibold">View Details →</Link>
-            </div>
-          </Widget>
-
-          {/* Tasks & Reminders */}
-          <Widget title="Tasks & Reminders" icon="📌">
-            <div className="divide-y divide-slate-50">
-              {mockTasks.map(task => (
-                <label key={task.id} className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <input type="checkbox" className="h-3.5 w-3.5 rounded border-slate-300 text-navy-800 focus:ring-navy-500/30" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-700 font-medium truncate">{task.title}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[9px] text-slate-400 font-mono">{task.caseId}</span>
-                      {task.urgent && <span className="text-[8px] font-bold text-red-600 bg-red-50 px-1 rounded">URGENT</span>}
-                    </div>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </Widget>
-
-          {/* Research Sources */}
-          <Widget title="Research Sources" icon="🔬">
-            <div className="divide-y divide-slate-50">
-              {RESEARCH_SOURCES.map(s => (
-                <Link key={s.name} href="/dashboard/research" className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition-colors">
-                  <span className="text-sm">{s.icon}</span>
-                  <span className={`text-xs font-semibold ${s.color}`}>{s.name}</span>
-                </Link>
-              ))}
-            </div>
-          </Widget>
-        </div>
-
-        {/* === COLUMN 4 === */}
-        <div className="space-y-3">
-          {/* My Legal Databases */}
-          <Widget title="My Databases" icon="🗄️"
-            headerExtra={
-              <button onClick={() => setShowDbPicker(!showDbPicker)} className="text-[10px] text-navy-700 hover:text-navy-900 font-semibold">
-                {showDbPicker ? 'Done' : '+ Add'}
-              </button>
-            }
-          >
-            {showDbPicker ? (
-              <div className="p-2 space-y-2">
-                <input value={dbSearch} onChange={e => setDbSearch(e.target.value)} placeholder="Search databases..." className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy-500/20" />
-                <div className="max-h-[250px] overflow-auto space-y-1">
-                  {ALL_DATABASES.filter(db => !dbSearch || db.name.toLowerCase().includes(dbSearch.toLowerCase())).map(db => {
-                    const isPinned = pinnedDbs.includes(db.key);
-                    return (
-                      <button key={db.key} onClick={() => togglePinDb(db.key)} className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs transition-all ${isPinned ? 'bg-navy-50 border border-navy-200' : 'bg-white border border-slate-100 hover:bg-slate-50'}`}>
-                        <span className="text-sm">{db.icon}</span>
-                        <span className={`font-medium flex-1 text-left ${isPinned ? 'text-navy-800' : 'text-slate-600'}`}>{db.name}</span>
-                        {isPinned ? <span className="text-[9px] font-bold text-navy-600 bg-navy-100 px-1.5 py-0.5 rounded-full">✓ Added</span> : <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full">+ Add</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : pinnedDbs.length === 0 ? (
-              <div className="p-4 text-center">
-                <p className="text-xs text-slate-400 mb-2">No databases added yet</p>
-                <button onClick={() => setShowDbPicker(true)} className="text-[10px] font-semibold text-navy-700 hover:text-navy-900">+ Add your subscriptions</button>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {pinnedDbs.map(key => {
-                  const db = ALL_DATABASES.find(d => d.key === key);
-                  if (!db) return null;
-                  const hasCreds = typeof window !== 'undefined' && (() => { try { const c = localStorage.getItem('acc_agentic_creds'); return c ? !!JSON.parse(c)[key] : false; } catch { return false; } })();
-                  return (
-                    <div key={key} className="px-3 py-2.5">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <div className={`w-7 h-7 rounded-lg bg-gradient-to-br ${db.color} flex items-center justify-center text-white text-sm shadow-sm`}>{db.icon}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-slate-800">{db.name}</span>
-                            {hasCreds ? <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">Connected</span> : <span className="text-[8px] font-bold text-amber-600 bg-amber-50 px-1 py-0.5 rounded">Not linked</span>}
-                          </div>
-                        </div>
-                        <button onClick={() => togglePinDb(key)} className="text-slate-300 hover:text-red-400 transition-colors p-0.5" title="Remove">
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                      </div>
-                      <div className="flex gap-1">
-                        <input value={dbQuickSearch[key] || ''} onChange={e => setDbQuickSearch(prev => ({ ...prev, [key]: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter' && dbQuickSearch[key]?.trim()) router.push(`/dashboard/research?q=${encodeURIComponent(dbQuickSearch[key])}&source=${key}`); }} placeholder={`Search ${db.name}...`} className="flex-1 text-[10px] border border-slate-150 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-navy-500/20" />
-                        <Link href={hasCreds ? `/dashboard/research?source=${key}` : '/dashboard/research'} className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-500 text-[10px] font-medium rounded transition-colors">Go</Link>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Widget>
-
-          {/* Time Tracker */}
-          <Widget title="Time Tracker" icon="⏱️" headerExtra={<button onClick={() => setShowTimeLog(!showTimeLog)} className="text-[10px] text-navy-700 hover:text-navy-900 font-semibold">{showTimeLog ? 'Timer' : 'Log'}</button>}>
-            {showTimeLog ? (
-              <div className="divide-y divide-slate-50 max-h-[250px] overflow-auto">
-                <div className="px-3 py-2 bg-slate-50 flex justify-between text-[10px] text-slate-500 font-semibold">
-                  <span>Today: {formatHoursMinutes(getTodayTotal())}</span>
-                  <span>Week: {formatHoursMinutes(getWeekTotal())}</span>
-                </div>
-                {timeLog.length === 0 ? <p className="p-3 text-xs text-slate-400 text-center">No time entries yet</p> : timeLog.slice(0, 20).map(entry => (
-                  <div key={entry.id} className="px-3 py-2">
-                    <div className="flex justify-between items-start">
-                      <span className="text-xs font-medium text-slate-700 truncate mr-2">{entry.description}</span>
-                      <span className="text-[10px] font-mono font-bold text-slate-600 shrink-0">{formatHoursMinutes(entry.durationMs)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-3 space-y-2">
-                <div className="text-center">
-                  <span className={`text-2xl font-mono font-bold ${timerEntry?.status === 'running' ? 'text-emerald-600' : timerEntry?.status === 'paused' ? 'text-amber-500 animate-pulse' : 'text-slate-800'}`}>{timerDisplay}</span>
-                  {timerEntry?.status === 'paused' && <p className="text-[9px] text-amber-500 font-semibold mt-0.5">PAUSED</p>}
-                </div>
-                {!timerEntry && <input value={timerDesc} onChange={e => setTimerDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleStartTimer()} placeholder="What are you working on?" className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-navy-500/20" />}
-                {timerEntry?.description && <p className="text-[10px] text-slate-500 text-center truncate">{timerEntry.description}</p>}
-                <div className="grid grid-cols-3 gap-1.5">
-                  {!timerEntry ? (
-                    <button onClick={handleStartTimer} className="col-span-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded transition-colors">Start</button>
-                  ) : timerEntry.status === 'running' ? (
-                    <><button onClick={handlePauseTimer} className="col-span-2 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold rounded transition-colors">Pause</button><button onClick={handleStopTimer} className="py-1.5 bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold rounded transition-colors">Stop</button></>
-                  ) : timerEntry.status === 'paused' ? (
-                    <><button onClick={handleResumeTimer} className="col-span-2 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold rounded transition-colors">Resume</button><button onClick={handleStopTimer} className="py-1.5 bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold rounded transition-colors">Stop</button></>
-                  ) : null}
-                </div>
-              </div>
-            )}
-          </Widget>
-
-          {/* Messaging & Notes */}
-          <Widget title="Messages & Notes" icon="💬">
-            <div>
-              <div className="flex border-b border-slate-100">
-                <button onClick={() => setMsgTab('chat')} className={`flex-1 py-1.5 text-[10px] font-bold transition-colors ${msgTab === 'chat' ? 'text-navy-800 border-b-2 border-navy-800' : 'text-slate-400 hover:text-slate-600'}`}>Lex Chat</button>
-                <button onClick={() => setMsgTab('notes')} className={`flex-1 py-1.5 text-[10px] font-bold transition-colors ${msgTab === 'notes' ? 'text-navy-800 border-b-2 border-navy-800' : 'text-slate-400 hover:text-slate-600'}`}>Notes</button>
-              </div>
-              {msgTab === 'chat' ? (
-                <div className="p-2 space-y-2 max-h-[150px] overflow-auto">
-                  {lexMessages.length === 0 ? (
-                    <div className="text-center py-3">
-                      <p className="text-xs text-slate-400 mb-1">No conversations yet</p>
-                      <button onClick={() => { localStorage.setItem('acc_paralegal_open', 'true'); window.dispatchEvent(new CustomEvent('open-paralegal')); }} className="text-[10px] font-semibold text-navy-700 hover:text-navy-900">Chat with Lex →</button>
-                    </div>
-                  ) : lexMessages.map((m, i) => (
-                    <div key={i} className="text-[11px]">
-                      <span className={`font-bold ${m.sender === 'Lex' ? 'text-[#D4AF37]' : 'text-slate-700'}`}>{m.sender}: </span>
-                      <span className="text-slate-500">{m.text}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-2">
-                  <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Quick notes — auto-saved..." rows={4} className="w-full text-xs border border-slate-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-navy-500/20 resize-none" />
-                </div>
-              )}
-            </div>
-          </Widget>
+          ))}
         </div>
       </div>
+
+      {/* Daily Calendar */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-800">📅 Today&apos;s Schedule</h3>
+          <Link href="/dashboard/court-schedules" className="text-[10px] font-semibold text-blue-600 hover:text-blue-800">Full Calendar →</Link>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {todayCalendar.map((e, i) => (
+            <div key={i} className="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+              <span className="text-[10px] font-mono font-bold text-slate-400 w-16 shrink-0">{e.time}</span>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                e.type === 'court' ? 'bg-red-500' : e.type === 'call' ? 'bg-blue-500' : e.type === 'task' ? 'bg-amber-500' : e.type === 'admin' ? 'bg-emerald-500' : 'bg-slate-300'
+              }`} />
+              <p className="text-xs text-slate-700">{e.event}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Action Grid */}
+      <div className="grid grid-cols-4 gap-2">
+        <Link href="/dashboard/copilot" className="flex flex-col items-center gap-1 p-3 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">🤖</span>Co-Pilot
+        </Link>
+        <Link href="/dashboard/vouchers" className="flex flex-col items-center gap-1 p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">💵</span>Vouchers
+        </Link>
+        <Link href="/dashboard/research" className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">🔍</span>Research
+        </Link>
+        <Link href="/dashboard/agent" className="flex flex-col items-center gap-1 p-3 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">⚖️</span>Ask Lex
+        </Link>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="p-3 sm:p-4 lg:p-5 max-w-[1600px] mx-auto animate-fade-in pb-8">
+      <SplitView feed={feed} main={mainContent} />
     </div>
   );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// PRIVATE PRACTICE — SPLIT VIEW
+// Feed: New Leads (Intake), Client Messages, Trust Account alerts
+// Main: Matter List, Billable Hours Tracker, Consultations
+// ══════════════════════════════════════════════════════════════════
+function PrivatePracticeDashboard() {
+  const { user } = useAuth();
+  const firstName = user?.name.split(' ')[0] || 'Counselor';
+
+  // --- FEED DATA ---
+  const newLeads = [
+    { text: 'Jennifer Adams — Estate Planning inquiry', sub: 'Web form · 2 hours ago · $5K+ potential', icon: '🟢' },
+    { text: 'Robert Kim — Contested divorce', sub: 'Referral from Lisa Chen · Yesterday', icon: '🟡' },
+    { text: 'Maria Santos — Personal injury consultation', sub: 'Phone inquiry · Feb 13 · Awaiting callback', icon: '🟡' },
+    { text: 'Tom Bradley — Business formation', sub: 'Web form · Feb 12 · Auto-responded', icon: '⚪' },
+    { text: 'Angela Wright — Custody modification', sub: 'Walk-in · Feb 11 · Needs conflict check', icon: '🟡' },
+  ];
+
+  const clientMessages = [
+    { text: 'Sarah Mitchell: "Signed the retainer, attached here"', sub: '2 hours ago · Has attachment', icon: '📎', urgent: true },
+    { text: 'David Park: "Can we move consult to Thursday?"', sub: '4 hours ago · Needs reply', icon: '💬', urgent: true },
+    { text: 'Lisa Chen: "Thank you for the invoice breakdown"', sub: 'Yesterday · No action needed', icon: '✅' },
+    { text: 'Michael Torres: "Uploaded discovery docs to portal"', sub: 'Yesterday · 12 files added', icon: '📁' },
+  ];
+
+  const trustAlerts = [
+    { text: 'Trust deposit received: $5,000 — Mitchell retainer', sub: 'IOLA Account · Cleared today', icon: '✅' },
+    { text: 'Low balance warning: Torres matter', sub: 'Balance: $340 · Estimated need: $2,000+', icon: '⚠️', urgent: true },
+    { text: 'Trust disbursement: $1,200 — Chen filing fees', sub: 'Processed Feb 13 · Receipt attached', icon: '📤' },
+    { text: 'Monthly reconciliation due Feb 28', sub: '3 accounts · Last reconciled Jan 31', icon: '📊' },
+  ];
+
+  // --- MAIN DATA ---
+  const matters = [
+    { client: 'Sarah Mitchell', matter: 'Mitchell v. Mitchell — Divorce', area: 'Family', status: 'Retainer signed', billable: '$0', next: 'Initial consult Feb 19' },
+    { client: 'David Park', matter: 'Park Estate Plan', area: 'Estate', status: 'Drafting', billable: '$2,800', next: 'Review meeting Feb 21' },
+    { client: 'Lisa Chen', matter: 'Chen v. Apex Corp — Employment', area: 'Civil Lit', status: 'Discovery', billable: '$8,450', next: 'Deposition Mar 5' },
+    { client: 'Michael Torres', matter: 'Torres — Mediation', area: 'Family', status: 'In mediation', billable: '$4,200', next: 'Session Feb 21' },
+    { client: 'Jennifer Adams', matter: 'Adams Revocable Trust', area: 'Estate', status: 'Active', billable: '$1,650', next: 'Signing Feb 26' },
+  ];
+
+  const billableToday = { hours: 3.5, target: 6.5 };
+  const billableWeek = { hours: 22.5, target: 32.5 };
+  const billableMonth = { hours: 87, target: 140, revenue: '$18,450' };
+
+  const consultations = [
+    { time: '10:00 AM', client: 'Robert Kim', type: 'Initial — Divorce', location: 'Office', status: 'Confirmed' },
+    { time: '2:00 PM', client: 'Maria Santos', type: 'Initial — Personal Injury', location: 'Video Call', status: 'Pending' },
+    { time: 'Feb 19 · 11 AM', client: 'Sarah Mitchell', type: 'Follow-up — Retainer review', location: 'Office', status: 'Confirmed' },
+    { time: 'Feb 21 · 3 PM', client: 'Angela Wright', type: 'Initial — Custody', location: 'Office', status: 'Tentative' },
+  ];
+
+  const feed = (
+    <>
+      <FeedCard title="New Leads" icon="📩" accent="purple" href="/dashboard/client-intake">
+        {newLeads.map((l, i) => <FeedItem key={i} {...l} />)}
+      </FeedCard>
+
+      <FeedCard title="Client Messages" icon="💬" accent="blue" href="/dashboard/messages">
+        {clientMessages.map((m, i) => <FeedItem key={i} {...m} />)}
+      </FeedCard>
+
+      <FeedCard title="Trust Account" icon="🏦" accent="emerald">
+        {trustAlerts.map((t, i) => <FeedItem key={i} {...t} />)}
+      </FeedCard>
+    </>
+  );
+
+  const pctToday = Math.min(100, (billableToday.hours / billableToday.target) * 100);
+  const pctWeek = Math.min(100, (billableWeek.hours / billableWeek.target) * 100);
+
+  const mainContent = (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Firm Dashboard</h1>
+          <p className="text-xs text-slate-500">{firstName} · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/dashboard/client-intake" className="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-800 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors">
+            + New Client
+          </Link>
+        </div>
+      </div>
+
+      {/* Billable Hours Tracker */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+        <h3 className="text-sm font-bold text-slate-800 mb-3">⏱️ Billable Hours</h3>
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+              <span>Today</span>
+              <span className="font-bold">{billableToday.hours}h / {billableToday.target}h</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-3">
+              <div className={`h-3 rounded-full transition-all duration-500 ${pctToday >= 80 ? 'bg-emerald-500' : pctToday >= 50 ? 'bg-amber-500' : 'bg-red-400'}`} style={{ width: `${pctToday}%` }} />
+            </div>
+          </div>
+          <div>
+            <div className="flex justify-between text-[10px] text-slate-500 mb-1">
+              <span>This Week</span>
+              <span className="font-bold">{billableWeek.hours}h / {billableWeek.target}h</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-3">
+              <div className={`h-3 rounded-full transition-all duration-500 ${pctWeek >= 80 ? 'bg-emerald-500' : pctWeek >= 50 ? 'bg-amber-500' : 'bg-red-400'}`} style={{ width: `${pctWeek}%` }} />
+            </div>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold text-emerald-700">{billableMonth.revenue}</p>
+            <p className="text-[10px] text-slate-500">{billableMonth.hours}h / {billableMonth.target}h MTD</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Matter List */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-slate-800">📂 Active Matters ({matters.length})</h3>
+          <Link href="/dashboard/cases" className="text-[10px] font-semibold text-purple-600 hover:text-purple-800">All Matters →</Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                <th className="px-4 py-2">Client / Matter</th>
+                <th className="px-3 py-2">Area</th>
+                <th className="px-3 py-2">Billed</th>
+                <th className="px-3 py-2">Next Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {matters.map((m, i) => (
+                <tr key={i} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-slate-800">{m.client}</p>
+                    <p className="text-[10px] text-slate-400">{m.matter}</p>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">{m.area}</span>
+                  </td>
+                  <td className="px-3 py-3 font-semibold text-slate-700">{m.billable}</td>
+                  <td className="px-3 py-3 text-[10px] text-slate-500">{m.next}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Consultations */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100">
+          <h3 className="text-sm font-bold text-slate-800">🗓️ Upcoming Consultations</h3>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {consultations.map((c, i) => (
+            <div key={i} className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+              <span className="text-[10px] font-mono font-bold text-slate-400 w-20 shrink-0">{c.time}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-slate-800">{c.client}</p>
+                <p className="text-[10px] text-slate-500">{c.type} · {c.location}</p>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                c.status === 'Confirmed' ? 'bg-emerald-100 text-emerald-700' :
+                c.status === 'Pending' ? 'bg-amber-100 text-amber-700' :
+                'bg-slate-100 text-slate-500'
+              }`}>{c.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-4 gap-2">
+        <Link href="/dashboard/copilot" className="flex flex-col items-center gap-1 p-3 bg-purple-50 hover:bg-purple-100 text-purple-800 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">🤖</span>Practice AI
+        </Link>
+        <Link href="/dashboard/billing" className="flex flex-col items-center gap-1 p-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">💰</span>Billing
+        </Link>
+        <Link href="/dashboard/research" className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">🔍</span>Research
+        </Link>
+        <Link href="/dashboard/premium-ai" className="flex flex-col items-center gap-1 p-3 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">✨</span>Premium AI
+        </Link>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="p-3 sm:p-4 lg:p-5 max-w-[1600px] mx-auto animate-fade-in pb-8">
+      <SplitView feed={feed} main={mainContent} />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// COMBINED DASHBOARD — SPLIT VIEW (Merged Feed + Merged Main)
+// ══════════════════════════════════════════════════════════════════
+function CombinedDashboard() {
+  const { cases } = useAppContext();
+  const { user } = useAuth();
+  const openCases = cases.filter(c => c.status === 'Open');
+  const firstName = user?.name.split(' ')[0] || 'Counselor';
+
+  // --- MERGED FEED ---
+  const combinedFeed = [
+    { text: 'Part 32 — Calendar delayed 30 min', sub: 'AC · Judge Williams · 8:45 AM', icon: '🔔', urgent: true },
+    { text: 'Sarah Mitchell signed retainer agreement', sub: 'Private · Has attachment · 2 hours ago', icon: '📎', urgent: true },
+    { text: 'Voucher #V-2024-0360 needs correction', sub: 'AC · Matter of Davis · Missing entries', icon: '⚠️', urgent: true },
+    { text: 'Trust low balance: Torres matter ($340)', sub: 'Private · Estimated need: $2,000+', icon: '🏦', urgent: true },
+  ];
+
+  const feedUpdates = [
+    { text: 'Voucher #V-2024-0341 approved — $1,850', sub: 'AC · People v. Chen', icon: '✅' },
+    { text: 'David Park: "Move consult to Thursday?"', sub: 'Private · Needs reply', icon: '💬' },
+    { text: 'Panel meeting: Feb 25, 6:00 PM', sub: 'AC · Queens Bar · Mandatory', icon: '📌' },
+    { text: 'Jennifer Adams — Estate Planning inquiry', sub: 'Private · Web form · 2 hours ago', icon: '📩' },
+    { text: 'New rate increase effective March 1', sub: 'AC · In-court: $158→$164/hr', icon: '💵' },
+    { text: 'Trust deposit: $5,000 — Mitchell retainer', sub: 'Private · IOLA · Cleared today', icon: '✅' },
+    { text: 'New assignment: Rodriguez — Petit Larceny', sub: 'AC · Criminal Court, Queens', icon: '📥' },
+    { text: 'Robert Kim — Divorce referral from Lisa Chen', sub: 'Private · Yesterday', icon: '🟡' },
+  ];
+
+  // --- MERGED MAIN ---
+  const unifiedCalendar = [
+    { time: '9:00 AM', event: 'Client call — Thompson (trial prep)', source: 'AC', type: 'call' },
+    { time: '9:30 AM', event: 'People v. Martinez — Part 32', source: 'AC', type: 'court' },
+    { time: '10:00 AM', event: 'Robert Kim — Initial consult (Divorce)', source: 'Private', type: 'consult' },
+    { time: '11:00 AM', event: 'Draft motion — Martinez', source: 'AC', type: 'task' },
+    { time: '2:00 PM', event: 'Maria Santos — PI consult (Video)', source: 'Private', type: 'consult' },
+    { time: '2:30 PM', event: 'People v. Chen — Part 15', source: 'AC', type: 'court' },
+    { time: '4:00 PM', event: 'Voucher prep + Billing review', source: 'Both', type: 'admin' },
+  ];
+
+  const feed = (
+    <>
+      {/* Urgent / Action Required */}
+      <FeedCard title="Action Required" icon="🚨" accent="red">
+        {combinedFeed.map((f, i) => <FeedItem key={i} {...f} />)}
+      </FeedCard>
+
+      {/* Activity Stream */}
+      <FeedCard title="Activity Feed" icon="📡" accent="slate">
+        {feedUpdates.map((f, i) => <FeedItem key={i} {...f} />)}
+      </FeedCard>
+    </>
+  );
+
+  const mainContent = (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Mission Control</h1>
+          <p className="text-xs text-slate-500">Both practices · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+        </div>
+        <Link href="/dashboard/cases/new" className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors">
+          + New Case
+        </Link>
+      </div>
+
+      {/* Dual Summary Cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <h3 className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2">⚖️ Assigned Counsel</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-center"><p className="text-lg font-bold text-blue-800">{openCases.length}</p><p className="text-[9px] text-blue-600">Cases</p></div>
+            <div className="text-center"><p className="text-lg font-bold text-blue-800">$4,280</p><p className="text-[9px] text-blue-600">Pending</p></div>
+          </div>
+          <div className="flex gap-1.5 mt-3">
+            <Link href="/dashboard/vouchers" className="flex-1 text-center py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-semibold rounded-md transition-colors">Vouchers</Link>
+            <Link href="/dashboard/court-schedules" className="flex-1 text-center py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 text-[10px] font-semibold rounded-md transition-colors">Calendar</Link>
+          </div>
+        </div>
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4">
+          <h3 className="text-[10px] font-bold text-purple-600 uppercase tracking-wider mb-2">🏛️ Private Practice</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="text-center"><p className="text-lg font-bold text-purple-800">23</p><p className="text-[9px] text-purple-600">Clients</p></div>
+            <div className="text-center"><p className="text-lg font-bold text-purple-800">$18.4K</p><p className="text-[9px] text-purple-600">Revenue</p></div>
+          </div>
+          <div className="flex gap-1.5 mt-3">
+            <Link href="/dashboard/billing" className="flex-1 text-center py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-semibold rounded-md transition-colors">Billing</Link>
+            <Link href="/dashboard/client-intake" className="flex-1 text-center py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-800 text-[10px] font-semibold rounded-md transition-colors">Intake</Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Unified Daily Calendar */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100">
+          <h3 className="text-sm font-bold text-slate-800">📅 Today&apos;s Schedule</h3>
+        </div>
+        <div className="divide-y divide-slate-50">
+          {unifiedCalendar.map((e, i) => (
+            <div key={i} className="px-4 py-2.5 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+              <span className="text-[10px] font-mono font-bold text-slate-400 w-16 shrink-0">{e.time}</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                e.source === 'AC' ? 'bg-blue-100 text-blue-700' : e.source === 'Private' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
+              }`}>{e.source}</span>
+              <p className="text-xs text-slate-700">{e.event}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Combined Financials */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+        <h3 className="text-sm font-bold text-slate-800 mb-3">💰 Combined Financials (MTD)</h3>
+        <div className="grid grid-cols-4 gap-3 text-center">
+          <div><p className="text-lg font-bold text-blue-700">$8,170</p><p className="text-[9px] text-slate-500">AC Paid</p></div>
+          <div><p className="text-lg font-bold text-purple-700">$15,480</p><p className="text-[9px] text-slate-500">Private Collected</p></div>
+          <div><p className="text-lg font-bold text-emerald-700">$23,650</p><p className="text-[9px] text-slate-500">Total Revenue</p></div>
+          <div><p className="text-lg font-bold text-amber-600">$11,600</p><p className="text-[9px] text-slate-500">Outstanding</p></div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-4 gap-2">
+        <Link href="/dashboard/copilot" className="flex flex-col items-center gap-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">🤖</span>Co-Pilot
+        </Link>
+        <Link href="/dashboard/agent" className="flex flex-col items-center gap-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">⚖️</span>Ask Lex
+        </Link>
+        <Link href="/dashboard/research" className="flex flex-col items-center gap-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">🔍</span>Research
+        </Link>
+        <Link href="/dashboard/cases" className="flex flex-col items-center gap-1 p-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-medium transition-colors text-center">
+          <span className="text-lg">📂</span>All Cases
+        </Link>
+      </div>
+    </>
+  );
+
+  return (
+    <div className="p-3 sm:p-4 lg:p-5 max-w-[1600px] mx-auto animate-fade-in pb-8">
+      <SplitView feed={feed} main={mainContent} />
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN EXPORT — Routes to correct dashboard
+// ══════════════════════════════════════════════════════════════════
+export default function DashboardPage() {
+  const { mode } = usePracticeMode();
+
+  if (mode === 'prose') return <ProSeDashboard />;
+  if (mode === '18b') return <AssignedCounselDashboard />;
+  if (mode === 'private') return <PrivatePracticeDashboard />;
+  return <CombinedDashboard />;
 }

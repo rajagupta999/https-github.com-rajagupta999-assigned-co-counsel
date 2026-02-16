@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 // DashboardShell is provided by the layout
 
 interface GuideStep {
@@ -148,31 +149,30 @@ export default function ProSePage() {
     setIsLoading(true);
     setAnswer('');
     
-    // Simulated response - in production, this calls the AI
-    setTimeout(() => {
-      setAnswer(`**Understanding Your Question**
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: question }],
+          model: 'claude-3-opus-20240229', // High-quality for legal guidance
+          systemPrompt: `You are a helpful, empathetic legal guide for pro se litigants in New York. 
+          Your goal is to explain legal concepts simply, without jargon. 
+          Always clarify that you are not a lawyer and this is information, not advice.
+          Structure your answer with: **Key Points**, **Next Steps**, and **Resources**.
+          Context: The user is asking about ${selectedType || 'general legal issues'}.`
+        })
+      });
 
-Based on your question about "${question.slice(0, 50)}...", here's what you need to know:
-
-**Key Points:**
-1. In New York, the rules for this situation are governed by [relevant statute]
-2. You have [X days] to take action from when [triggering event]
-3. The forms you need are available at nycourts.gov
-
-**Your Next Steps:**
-1. Gather all relevant documents
-2. File the appropriate paperwork
-3. Keep copies of everything
-
-**Important Warning:**
-This is general information, not legal advice. For your specific situation, consider consulting with a lawyer. Many offer free consultations, and legal aid may be available if you qualify.
-
-**Free Resources:**
-- LawHelp NY: lawhelpny.org
-- Legal Aid Society: legalaidnyc.org
-- NY Courts Self-Help: nycourts.gov/courthelp`);
+      if (!response.ok) throw new Error('Failed to get answer');
+      
+      const data = await response.json();
+      setAnswer(data.role === 'assistant' ? data.content : data.choices[0].message.content); // Handle different API shapes
+    } catch (error) {
+      setAnswer('**Error:** I having trouble connecting to the legal helper right now. Please try again in a moment.');
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -234,7 +234,7 @@ This is general information, not legal advice. For your specific situation, cons
             </button>
 
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-4 bg-gray-50 border-b border-gray-200">
+              <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl">{selectedCase.icon}</span>
                   <div>
@@ -242,6 +242,12 @@ This is general information, not legal advice. For your specific situation, cons
                     <p className="text-gray-600">{selectedCase.description}</p>
                   </div>
                 </div>
+                <Link 
+                  href={`/dashboard/cases?new=${selectedCase.id}`}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-all flex items-center gap-2"
+                >
+                  Start This Case →
+                </Link>
               </div>
 
               {/* Progress Steps */}

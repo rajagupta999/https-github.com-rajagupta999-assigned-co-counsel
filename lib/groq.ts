@@ -1,7 +1,7 @@
 // GROQ API integration for Co-Pilot
 // Using client-side calls (static export compatibility)
 
-const GROQ_API_KEY = 'GROQ_KEY_REMOVED';
+const GROQ_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY || '';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export interface Message {
@@ -17,7 +17,7 @@ export interface GroqResponse {
   }[];
 }
 
-const SYSTEM_PROMPT = `You are 18B Lawyer AI, a legal assistant for assigned counsel attorneys (18B panel attorneys, public defenders, and court-appointed lawyers).
+const SYSTEM_PROMPT = `You are Assigned Co-Counsel AI, a legal assistant for assigned counsel attorneys (assigned counsel panel attorneys, public defenders, and court-appointed lawyers).
 
 Your capabilities:
 - Draft legal documents (motions, briefs, letters)

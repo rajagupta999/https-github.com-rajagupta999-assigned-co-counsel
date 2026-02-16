@@ -408,7 +408,7 @@ export function generateCaseAwareSystemPrompt(
   caseContext: string,
   citationMode: boolean = true
 ): string {
-  let prompt = `You are 18B Lawyer AI, a legal assistant for 18B panel attorneys and pro se litigants in New York.
+  let prompt = `You are Assigned Co-Counsel AI, a legal assistant for assigned counsel panel attorneys and pro se litigants in New York.
 
 ${caseContext ? `The user is currently working on the following case:\n\n${caseContext}\n\n` : ''}
 

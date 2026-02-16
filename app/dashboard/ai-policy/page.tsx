@@ -16,7 +16,7 @@ export default function AIPolicyPage() {
             AI Trust, Safety & <span className="text-[#D4AF37]">Privilege Protection</span>
           </h1>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            How 18B Lawyer protects attorney-client privilege, eliminates hallucinations, 
+            How Assigned Co-Counsel protects attorney-client privilege, eliminates hallucinations, 
             and maintains the same enterprise-grade security architecture used by leading legal AI platforms.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default function AIPolicyPage() {
           <p className="text-gray-300 text-sm leading-relaxed mb-4">
             When you use the public ChatGPT at <code className="text-xs bg-white/10 px-1.5 py-0.5 rounded">chat.openai.com</code>, 
             your data is processed on shared servers and may be used to improve OpenAI&apos;s models. 
-            <strong className="text-white"> 18B Lawyer never touches public AI endpoints.</strong>
+            <strong className="text-white"> Assigned Co-Counsel never touches public AI endpoints.</strong>
           </p>
           <p className="text-gray-300 text-sm leading-relaxed mb-6">
             Instead, we route all AI requests through <strong className="text-white">enterprise API endpoints</strong> from 
@@ -151,7 +151,7 @@ export default function AIPolicyPage() {
           </div>
 
           <p className="text-gray-300 text-sm leading-relaxed mb-4">
-            <strong className="text-white">18B Lawyer operates as a technology vendor and agent of the attorney.</strong> This is 
+            <strong className="text-white">Assigned Co-Counsel operates as a technology vendor and agent of the attorney.</strong> This is 
             the same legal framework that permits law firms to use:
           </p>
           <ul className="text-gray-400 text-sm space-y-1 mb-4 ml-4">
@@ -365,7 +365,7 @@ export default function AIPolicyPage() {
                 <tr className="border-b border-white/10 bg-white/5">
                   <th className="text-left text-gray-400 font-medium px-4 py-3">Security Feature</th>
                   <th className="text-center text-gray-400 font-medium px-3 py-3">leading legal AI platforms</th>
-                  <th className="text-center text-gray-400 font-medium px-3 py-3">18B Lawyer</th>
+                  <th className="text-center text-gray-400 font-medium px-3 py-3">Assigned Co-Counsel</th>
                   <th className="text-center text-red-400 font-medium px-3 py-3">Public ChatGPT</th>
                 </tr>
               </thead>
@@ -394,10 +394,10 @@ export default function AIPolicyPage() {
             </table>
           </div>
           <p className="text-gray-400 text-xs leading-relaxed">
-            leading legal AI platforms uses Azure OpenAI Service (GPT-4) within a private tenant. 18B Lawyer uses Cerebras 
+            leading legal AI platforms uses Azure OpenAI Service (GPT-4) within a private tenant. Assigned Co-Counsel uses Cerebras 
             and Groq enterprise APIs with equivalent privacy guarantees. The key architectural principles are identical: 
             private endpoints, zero training, zero retention, and vendor-as-agent privilege protection. 
-            The primary difference is that enterprise legal AI platforms charge $2,000+/month per seat while 18B Lawyer 
+            The primary difference is that enterprise legal AI platforms charge $2,000+/month per seat while Assigned Co-Counsel 
             is built for 18-B panel attorneys who need the same protections at no cost.
           </p>
         </Section>
@@ -553,7 +553,7 @@ function ComparisonTable() {
           <tr className="border-b border-white/10">
             <th className="text-left text-gray-400 font-medium px-4 py-2.5">Feature</th>
             <th className="text-center text-red-400 font-medium px-3 py-2.5">Public ChatGPT</th>
-            <th className="text-center text-green-400 font-medium px-3 py-2.5">18B Lawyer</th>
+            <th className="text-center text-green-400 font-medium px-3 py-2.5">Assigned Co-Counsel</th>
           </tr>
         </thead>
         <tbody className="text-gray-300">

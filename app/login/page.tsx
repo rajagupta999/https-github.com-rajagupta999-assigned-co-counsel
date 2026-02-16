@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetSent, setResetSent] = useState(false);
-  const { loginWithGoogle, loginWithApple, loginWithFacebook, loginWithEmail, loginDemo } = useAuth();
+  const { loginWithGoogle, loginWithApple, loginWithFacebook, loginWithEmail, loginDemo, loginDemoClient } = useAuth();
   const router = useRouter();
 
   const handleSocialLogin = async (provider: 'google' | 'apple' | 'facebook' | 'demo') => {
@@ -57,13 +57,13 @@ export default function LoginPage() {
         <Link href="/" className="flex items-center gap-2 sm:gap-3">
           <Image 
             src="/logo-icon.svg" 
-            alt="18B Lawyer" 
+            alt="Assigned Co-Counsel" 
             width={36} 
             height={36}
             className="w-8 h-8 sm:w-10 sm:h-10"
           />
           <span className="text-white text-base sm:text-xl font-semibold tracking-wide uppercase">
-            18B Lawyer
+            Assigned Co-Counsel
           </span>
         </Link>
       </nav>
@@ -200,21 +200,46 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Demo Login */}
-            <button
-              onClick={() => handleSocialLogin('demo')}
-              disabled={isLoading !== null}
-              className="w-full flex items-center justify-center gap-2 bg-navy-800 hover:bg-navy-900 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading === 'demo' ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                </svg>
-              )}
-              Try Demo Account
-            </button>
+            {/* Demo Login Options */}
+            <div className="space-y-2">
+              <p className="text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Try a Demo</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleSocialLogin('demo')}
+                  disabled={isLoading !== null}
+                  className="flex items-center justify-center gap-2 bg-navy-800 hover:bg-navy-700 text-white font-semibold py-3 px-3 rounded-lg transition-all disabled:opacity-50"
+                >
+                  {isLoading === 'demo' ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <span className="text-sm">⚖️</span>
+                  )}
+                  <span className="text-sm">Attorney</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsLoading('client');
+                    const result = await loginDemoClient();
+                    if (result.success) {
+                      localStorage.setItem('acc_practice_mode', 'prose');
+                      router.push('/dashboard');
+                    } else {
+                      setError(result.error || 'Login failed');
+                      setIsLoading(null);
+                    }
+                  }}
+                  disabled={isLoading !== null}
+                  className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold py-3 px-3 rounded-lg transition-all disabled:opacity-50"
+                >
+                  {isLoading === 'client' ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <span className="text-sm">👤</span>
+                  )}
+                  <span className="text-sm">Client</span>
+                </button>
+              </div>
+            </div>
 
             <p className="text-center text-xs text-slate-400 mt-4">
               Demo mode uses sample data. No account required.
@@ -226,7 +251,7 @@ export default function LoginPage() {
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </p>
           <p className="text-center text-slate-500 text-xs mt-2">
-            &copy; 2026 18B Lawyer. All rights reserved.
+            &copy; 2026 Assigned Co-Counsel. All rights reserved.
           </p>
         </div>
       </div>

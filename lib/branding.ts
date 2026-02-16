@@ -100,10 +100,8 @@ const NATIONAL_BRAND: Brand = {
 };
 
 export function getBrand(): Brand {
-  if (typeof window === 'undefined') return NY_BRAND; // SSR default
-  const host = window.location.hostname;
-  if (host.includes('assignedcocounsel')) return NATIONAL_BRAND;
-  return NY_BRAND;
+  // Always use national Assigned Co-Counsel branding
+  return NATIONAL_BRAND;
 }
 
 export function isACCDomain(): boolean {

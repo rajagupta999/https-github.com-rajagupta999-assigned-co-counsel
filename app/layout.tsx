@@ -2,27 +2,28 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { PracticeModeProvider } from "@/context/PracticeModeContext";
 
 export const metadata: Metadata = {
-  title: "18B Lawyer",
+  title: "Assigned Co-Counsel",
   description: "Operating System for Court-Appointed Attorneys",
   keywords: ["legal", "attorney", "court-appointed", "case management", "public defender"],
-  authors: [{ name: "18B Lawyer" }],
+  authors: [{ name: "Assigned Co-Counsel" }],
   robots: "noindex, nofollow", // Private app - don't index
   
   // Open Graph for link previews
   openGraph: {
-    title: "18B Lawyer",
+    title: "Assigned Co-Counsel",
     description: "Operating System for Court-Appointed Attorneys",
     type: "website",
-    siteName: "18B Lawyer",
+    siteName: "Assigned Co-Counsel",
   },
   
   // Apple web app settings
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "18B Lawyer",
+    title: "Assigned Co-Counsel",
   },
   
   // Prevent phone number detection on iOS
@@ -71,9 +72,11 @@ export default function RootLayout({
         style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}
       >
         <AuthProvider>
-          <AppProvider>
-            {children}
-          </AppProvider>
+          <PracticeModeProvider>
+            <AppProvider>
+              {children}
+            </AppProvider>
+          </PracticeModeProvider>
         </AuthProvider>
       </body>
     </html>

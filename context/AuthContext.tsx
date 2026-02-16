@@ -13,6 +13,7 @@ import {
 } from '@/lib/auth';
 
 type UserRole = 'admin' | 'editor' | 'contributor' | 'viewer';
+type UserType = 'attorney' | 'client';
 
 interface AppUser {
   uid: string;
@@ -21,19 +22,24 @@ interface AppUser {
   photoURL: string | null;
   provider: string;
   role: UserRole;
+  userType: UserType;
 }
 
 // Role assignments by email (will move to Firestore later)
-const USER_ROLES: Record<string, { name: string; role: UserRole }> = {
-  'raja@assignedcocounsel.com': { name: 'Raja Gupta', role: 'admin' },
-  'saadya@assignedcocounsel.com': { name: 'Saadya', role: 'editor' },
-  'mike@assignedcocounsel.com': { name: 'Michael Lynn', role: 'editor' },
-  'demo@assignedcocounsel.com': { name: 'Demo Attorney', role: 'viewer' },
+const USER_ROLES: Record<string, { name: string; role: UserRole; userType: UserType }> = {
+  'raja@assignedcocounsel.com': { name: 'Raja Gupta', role: 'admin', userType: 'attorney' },
+  'saadya@assignedcocounsel.com': { name: 'Saadya', role: 'editor', userType: 'attorney' },
+  'mike@assignedcocounsel.com': { name: 'Michael Lynn', role: 'editor', userType: 'attorney' },
+  'demo@assignedcocounsel.com': { name: 'Demo Attorney', role: 'viewer', userType: 'attorney' },
+  'carlos@example.com': { name: 'Carlos Martinez', role: 'viewer', userType: 'client' },
+  'wei@example.com': { name: 'Wei Chen', role: 'viewer', userType: 'client' },
+  'angela@example.com': { name: 'Angela Davis', role: 'viewer', userType: 'client' },
+  'client@example.com': { name: 'Demo Client', role: 'viewer', userType: 'client' },
 };
 
-function getUserRole(email: string | null): { name: string; role: UserRole } {
-  if (!email) return { name: 'User', role: 'contributor' };
-  return USER_ROLES[email] || { name: email.split('@')[0], role: 'contributor' };
+function getUserRole(email: string | null): { name: string; role: UserRole; userType: UserType } {
+  if (!email) return { name: 'User', role: 'contributor', userType: 'attorney' };
+  return USER_ROLES[email] || { name: email.split('@')[0], role: 'contributor', userType: 'attorney' };
 }
 
 interface AuthContextType {
@@ -44,6 +50,7 @@ interface AuthContextType {
   loginWithFacebook: () => Promise<{ success: boolean; error?: string }>;
   loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginDemo: () => Promise<{ success: boolean; error?: string }>;
+  loginDemoClient: () => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -51,7 +58,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Convert Firebase User to AppUser
 function toAppUser(firebaseUser: User): AppUser {
-  const { name, role } = getUserRole(firebaseUser.email);
+  const { name, role, userType } = getUserRole(firebaseUser.email);
   return {
     uid: firebaseUser.uid,
     email: firebaseUser.email,
@@ -59,6 +66,7 @@ function toAppUser(firebaseUser: User): AppUser {
     photoURL: firebaseUser.photoURL,
     provider: firebaseUser.providerData[0]?.providerId || 'unknown',
     role,
+    userType,
   };
 }
 
@@ -70,6 +78,7 @@ const DEMO_USER: AppUser = {
   photoURL: null,
   provider: 'demo',
   role: 'viewer',
+  userType: 'attorney',
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -148,9 +157,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginDemo = async (): Promise<{ success: boolean; error?: string }> => {
-    // Demo login - no Firebase, just localStorage
     localStorage.setItem('acc_demo_user', 'true');
+    localStorage.setItem('acc_user_type', 'attorney');
     setUser(DEMO_USER);
+    return { success: true };
+  };
+
+  const loginDemoClient = async (): Promise<{ success: boolean; error?: string }> => {
+    const clientUser: AppUser = {
+      uid: 'demo-client',
+      email: 'client@example.com',
+      name: 'Carlos Martinez',
+      photoURL: null,
+      provider: 'demo',
+      role: 'viewer',
+      userType: 'client',
+    };
+    localStorage.setItem('acc_demo_user', 'true');
+    localStorage.setItem('acc_user_type', 'client');
+    setUser(clientUser);
     return { success: true };
   };
 
@@ -174,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loginWithFacebook,
       loginWithEmail,
       loginDemo,
+      loginDemoClient,
       logout 
     }}>
       {children}

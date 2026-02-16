@@ -530,7 +530,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-navy-700 mt-1">
                   Every time you or another attorney looks up a case via Westlaw or Lexis, 
                   that case is saved to our crowdsourced database. Over time, this creates 
-                  a free comprehensive legal database for all 18B attorneys!
+                  a free comprehensive legal database for all assigned counsel attorneys!
                 </p>
               </div>
             </div>

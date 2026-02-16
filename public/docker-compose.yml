@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # The Core Next.js Application
+  app:
+    image: ghcr.io/rajagupta/assigned-co-counsel:latest
+    container_name: assigned-co-counsel-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_PRACTICE_MODE=combined
+      - DATABASE_URL=file:/data/db.sqlite
+      - VECTOR_DB_URL=http://vector-db:8000
+      # Works on Mac/Windows Docker Desktop
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - AI_MODEL=llama3:8b-instruct-q4_K_M
+    volumes:
+      - ./data:/data
+      # Mount the host cases directory (configurable via .env)
+      - ${CASES_DIR:-~/Documents/Cases}:/mnt/cases:ro
+    depends_on:
+      - vector-db
+
+  # Local Vector Database (ChromaDB) for RAG
+  vector-db:
+    image: chromadb/chroma:latest
+    container_name: assigned-co-counsel-chroma
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chroma:/chroma/chroma
+    environment:
+      - ALLOW_RESET=false
+
+  # Tailscale Sidecar (Secure Remote Access)
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: assigned-co-counsel-tailscale
+    restart: always
+    hostname: assigned-legal-appliance
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=true  # Better compatibility for Docker Desktop (Mac/Win)
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+      # Tun device optional in userspace mode, but good to have if available
+      # - /dev/net/tun:/dev/net/tun 
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+  # Local AI Worker (Background Jobs)
+  ai-worker:
+    image: ghcr.io/rajagupta/assigned-co-counsel:latest
+    container_name: assigned-co-counsel-worker
+    command: ["npm", "run", "worker:start"]
+    restart: always
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - DATABASE_URL=file:/data/db.sqlite
+      - VECTOR_DB_URL=http://vector-db:8000
+    volumes:
+      - ./data:/data
+      - ${CASES_DIR:-~/Documents/Cases}:/mnt/cases:ro
+    depends_on:
+      - vector-db

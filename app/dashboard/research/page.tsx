@@ -1,720 +1,351 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { usePracticeMode } from '@/context/PracticeModeContext';
 import { useAppContext } from '@/context/AppContext';
+import { callLLM, streamLLM, LLMProvider, TaskType } from '@/lib/multiLLM';
+import { buildRAGContext, RAGContext } from '@/lib/ragService';
+import { searchAllLegalDatabases, CaseLawResult, StatuteResult } from '@/lib/legalDatabases';
+import { runMultiAgentAnalysis, runRedTeamAnalysis, getAgentPersonas, AgentRole, MultiAgentReport } from '@/lib/multiAgentAnalysis';
 import DictationButton from '@/components/DictationButton';
+import SearchPanel from './SearchPanel';
 
-interface SearchResult {
+// ══════════════════════════════════════════════════════════════════
+// Tab: Search Database  |  Chat with AI
+// ══════════════════════════════════════════════════════════════════
+
+type Tab = 'search' | 'chat';
+type AnalysisMode = 'standard' | 'citation' | 'multi-agent' | 'red-team' | 'research';
+
+interface Message {
   id: string;
-  caseName: string;
-  citation: string;
-  court: string;
-  dateFiled: string;
-  snippet: string;
-  url: string;
-  fullText?: string;
-  source: 'westlaw' | 'thomson' | 'courtlistener' | 'scholar' | 'recap' | 'justia' | 'lexisnexis' | 'bloomberg' | 'heinonline' | 'fastcase' | 'justcite' | 'docketnav' | 'jstor' | 'ebsco' | 'oxford' | 'cambridge' | 'proquest' | 'vitallaw' | 'vlex';
+  role: 'user' | 'ai' | 'system';
+  content: string;
+  timestamp: Date;
+  citations?: string[];
+  ragContext?: RAGContext;
+  multiAgentReport?: MultiAgentReport;
 }
 
-interface SourceConfig {
-  key: string;
-  label: string;
-  shortLabel: string;
-  icon: string;
-  color: string;
-  activeColor: string;
-  badgeColor: string;
-  free: boolean;
-  needsCreds: boolean;
-}
-
-const SOURCES: SourceConfig[] = [
-  { key: 'westlaw', label: 'Westlaw', shortLabel: 'Westlaw', icon: '🔵', color: 'border-blue-300 bg-blue-50 text-blue-800', activeColor: 'bg-blue-600 text-white border-blue-600', badgeColor: 'bg-blue-100 text-blue-700', free: false, needsCreds: true },
-  { key: 'thomson', label: 'Thomson Reuters', shortLabel: 'Thomson', icon: '🔴', color: 'border-red-300 bg-red-50 text-red-800', activeColor: 'bg-red-600 text-white border-red-600', badgeColor: 'bg-red-100 text-red-700', free: false, needsCreds: true },
-  { key: 'courtlistener', label: 'CourtListener', shortLabel: 'CourtListener', icon: '⚖️', color: 'border-purple-300 bg-purple-50 text-purple-800', activeColor: 'bg-purple-600 text-white border-purple-600', badgeColor: 'bg-purple-100 text-purple-700', free: true, needsCreds: false },
-  { key: 'scholar', label: 'Google Scholar', shortLabel: 'Scholar', icon: '📚', color: 'border-sky-300 bg-sky-50 text-sky-800', activeColor: 'bg-sky-600 text-white border-sky-600', badgeColor: 'bg-sky-100 text-sky-700', free: true, needsCreds: false },
-  { key: 'recap', label: 'RECAP (PACER)', shortLabel: 'RECAP', icon: '🏛️', color: 'border-emerald-300 bg-emerald-50 text-emerald-800', activeColor: 'bg-emerald-600 text-white border-emerald-600', badgeColor: 'bg-emerald-100 text-emerald-700', free: true, needsCreds: false },
-  { key: 'justia', label: 'Justia', shortLabel: 'Justia', icon: '📖', color: 'border-amber-300 bg-amber-50 text-amber-800', activeColor: 'bg-amber-600 text-white border-amber-600', badgeColor: 'bg-amber-100 text-amber-700', free: true, needsCreds: false },
-  { key: 'lexisnexis', label: 'LexisNexis / Lexis+', shortLabel: 'Lexis+', icon: '🔶', color: 'border-orange-300 bg-orange-50 text-orange-800', activeColor: 'bg-orange-600 text-white border-orange-600', badgeColor: 'bg-orange-100 text-orange-700', free: false, needsCreds: true },
-  { key: 'bloomberg', label: 'Bloomberg Law', shortLabel: 'Bloomberg', icon: '⬛', color: 'border-zinc-300 bg-zinc-50 text-zinc-800', activeColor: 'bg-zinc-800 text-white border-zinc-800', badgeColor: 'bg-zinc-100 text-zinc-700', free: false, needsCreds: true },
-  { key: 'heinonline', label: 'HeinOnline', shortLabel: 'HeinOnline', icon: '📕', color: 'border-rose-300 bg-rose-50 text-rose-800', activeColor: 'bg-rose-600 text-white border-rose-600', badgeColor: 'bg-rose-100 text-rose-700', free: false, needsCreds: true },
-  { key: 'fastcase', label: 'Fastcase / Casemaker', shortLabel: 'Fastcase', icon: '⚡', color: 'border-yellow-300 bg-yellow-50 text-yellow-800', activeColor: 'bg-yellow-600 text-white border-yellow-600', badgeColor: 'bg-yellow-100 text-yellow-700', free: false, needsCreds: true },
-  { key: 'vlex', label: 'vLex', shortLabel: 'vLex', icon: '🟢', color: 'border-green-300 bg-green-50 text-green-800', activeColor: 'bg-green-600 text-white border-green-600', badgeColor: 'bg-green-100 text-green-700', free: false, needsCreds: true },
-  { key: 'justcite', label: 'JustCite', shortLabel: 'JustCite', icon: '🔗', color: 'border-teal-300 bg-teal-50 text-teal-800', activeColor: 'bg-teal-600 text-white border-teal-600', badgeColor: 'bg-teal-100 text-teal-700', free: false, needsCreds: true },
-  { key: 'docketnav', label: 'Docket Navigator', shortLabel: 'DocketNav', icon: '🧭', color: 'border-cyan-300 bg-cyan-50 text-cyan-800', activeColor: 'bg-cyan-600 text-white border-cyan-600', badgeColor: 'bg-cyan-100 text-cyan-700', free: false, needsCreds: true },
-  { key: 'jstor', label: 'JSTOR', shortLabel: 'JSTOR', icon: '🏛️', color: 'border-indigo-300 bg-indigo-50 text-indigo-800', activeColor: 'bg-indigo-600 text-white border-indigo-600', badgeColor: 'bg-indigo-100 text-indigo-700', free: false, needsCreds: true },
-  { key: 'ebsco', label: 'EBSCO Legal Periodicals', shortLabel: 'EBSCO', icon: '📰', color: 'border-lime-300 bg-lime-50 text-lime-800', activeColor: 'bg-lime-600 text-white border-lime-600', badgeColor: 'bg-lime-100 text-lime-700', free: false, needsCreds: true },
-  { key: 'oxford', label: 'Oxford Law Collections', shortLabel: 'Oxford', icon: '🎓', color: 'border-blue-300 bg-blue-50 text-blue-800', activeColor: 'bg-blue-700 text-white border-blue-700', badgeColor: 'bg-blue-100 text-blue-700', free: false, needsCreds: true },
-  { key: 'cambridge', label: 'Cambridge Law', shortLabel: 'Cambridge', icon: '🏫', color: 'border-violet-300 bg-violet-50 text-violet-800', activeColor: 'bg-violet-600 text-white border-violet-600', badgeColor: 'bg-violet-100 text-violet-700', free: false, needsCreds: true },
-  { key: 'proquest', label: 'ProQuest Legislative', shortLabel: 'ProQuest', icon: '📜', color: 'border-fuchsia-300 bg-fuchsia-50 text-fuchsia-800', activeColor: 'bg-fuchsia-600 text-white border-fuchsia-600', badgeColor: 'bg-fuchsia-100 text-fuchsia-700', free: false, needsCreds: true },
-  { key: 'vitallaw', label: 'VitalLaw', shortLabel: 'VitalLaw', icon: '💊', color: 'border-pink-300 bg-pink-50 text-pink-800', activeColor: 'bg-pink-600 text-white border-pink-600', badgeColor: 'bg-pink-100 text-pink-700', free: false, needsCreds: true },
-];
-
-const FUNCTIONS_BASE = 'https://us-central1-assigned-co-counsel.cloudfunctions.net';
+const AGENT_COLORS: Record<AgentRole, string> = {
+  prosecutor: 'bg-red-100 text-red-800 border-red-200',
+  defense: 'bg-blue-100 text-blue-800 border-blue-200',
+  judge: 'bg-purple-100 text-purple-800 border-purple-200',
+  jury_analyst: 'bg-green-100 text-green-800 border-green-200',
+  appellate: 'bg-orange-100 text-orange-800 border-orange-200',
+  scholar: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  scribe: 'bg-gray-100 text-gray-800 border-gray-200',
+  analyst: 'bg-teal-100 text-teal-800 border-teal-200',
+};
 
 export default function ResearchPage() {
-  const { cases, currentCase } = useAppContext();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [aiSummary, setAiSummary] = useState<string | null>(null);
-  const [isSummarizing, setIsSummarizing] = useState(false);
-  const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
-  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<Tab>('search');
+  const { mode, isProSe } = usePracticeMode();
+  const { currentCase } = useAppContext();
 
-  // Source toggles
-  const [activeSources, setActiveSources] = useState<Record<string, boolean>>({
-    westlaw: false,
-    thomson: false,
-    courtlistener: true,
-    scholar: true,
-    recap: true,
-    justia: true,
-    lexisnexis: false,
-    bloomberg: false,
-    heinonline: false,
-    fastcase: false,
-    vlex: false,
-    justcite: false,
-    docketnav: false,
-    jstor: false,
-    ebsco: false,
-    oxford: false,
-    cambridge: false,
-    proquest: false,
-    vitallaw: false,
-  });
+  // Chat state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('standard');
+  const [selectedAgents, setSelectedAgents] = useState<AgentRole[]>(['prosecutor', 'defense', 'judge', 'analyst']);
+  const [useRAG, setUseRAG] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Extension detection
-  const [extensionAvailable, setExtensionAvailable] = useState(false);
-  const [agentStatus, setAgentStatus] = useState<Record<string, { status: string; message: string }>>({});
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
-  // Agentic credentials & setup
-  const [agenticEnabled, setAgenticEnabled] = useState(false);
-  const [agenticCreds, setAgenticCreds] = useState<Record<string, { username: string; password: string }>>({});
-  const [setupModal, setSetupModal] = useState<string | null>(null); // which source is being set up
-  const [credUsername, setCredUsername] = useState('');
-  const [credPassword, setCredPassword] = useState('');
+  const systemPrompt = isProSe
+    ? `You are a friendly, patient legal helper for someone representing themselves in court (pro se). Use SIMPLE, everyday language. NO legal jargon. Be warm, encouraging, and supportive.`
+    : `You are Research Desk AI, a legal research assistant for attorneys.
+Focus on: case law research, statute lookup, legal analysis, citation checking.
+${currentCase ? `Current case: ${currentCase.client} - ${currentCase.charges}` : ''}
+Be thorough, cite authority, and provide actionable analysis.`;
 
-  // Detect extension and listen for agent events
-  useEffect(() => {
-    // Check if extension is already loaded
-    if ((window as any).__ACC_EXTENSION__?.available) {
-      setExtensionAvailable(true);
-    }
-    const handleExtReady = () => setExtensionAvailable(true);
-    const handleAgentStatus = (e: any) => {
-      const { jobId, status, message } = e.detail;
-      setAgentStatus(prev => ({ ...prev, [jobId]: { status, message } }));
-    };
-    const handleAgentResults = (e: any) => {
-      const { source, results } = e.detail;
-      if (results?.length) {
-        setSearchResults(prev => {
-          const newResults = results.map((r: any) => ({ ...r, source }));
-          return [...newResults, ...prev];
-        });
-        setSourceCounts(prev => ({ ...prev, [source]: results.length }));
-      }
-    };
-    const handleAgentError = (e: any) => {
-      const { jobId, error } = e.detail;
-      setAgentStatus(prev => ({ ...prev, [jobId]: { status: 'error', message: error } }));
-    };
+  const analysisModes = isProSe
+    ? [
+        { id: 'standard', name: 'Ask a Question', icon: '💬', description: 'Get help in plain English' },
+        { id: 'research', name: 'Find Information', icon: '🔍', description: 'Search legal resources' },
+      ]
+    : [
+        { id: 'standard', name: 'Standard', icon: '💬', description: 'Quick AI assistance' },
+        { id: 'citation', name: 'Citation Mode', icon: '📚', description: 'With legal citations' },
+        { id: 'multi-agent', name: 'Multi-Agent', icon: '👥', description: 'Multiple perspectives' },
+        { id: 'red-team', name: 'Red Team', icon: '⚔️', description: 'Adversarial analysis' },
+        { id: 'research', name: 'Research', icon: '🔍', description: 'Search legal databases' },
+      ];
 
-    window.addEventListener('acc-extension-ready', handleExtReady);
-    window.addEventListener('acc-agent-status', handleAgentStatus as any);
-    window.addEventListener('acc-agent-results', handleAgentResults as any);
-    window.addEventListener('acc-agent-error', handleAgentError as any);
-    return () => {
-      window.removeEventListener('acc-extension-ready', handleExtReady);
-      window.removeEventListener('acc-agent-status', handleAgentStatus as any);
-      window.removeEventListener('acc-agent-results', handleAgentResults as any);
-      window.removeEventListener('acc-agent-error', handleAgentError as any);
-    };
-  }, []);
+  const suggestions = [
+    { label: 'Find cases on suppression of evidence', prompt: 'Find cases on suppression of evidence based on warrantless search in New York.' },
+    { label: 'What is CPL 30.30?', prompt: 'Explain CPL 30.30 speedy trial rules and how to calculate chargeable time.' },
+    { label: 'Shepardize a case', prompt: 'Help me check the current status and treatment of a case citation.' },
+    { label: 'Statute lookup', prompt: 'Look up the relevant statute for my legal issue.' },
+  ];
 
-  // Load settings from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem('acc_sources');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setActiveSources(prev => ({ ...prev, ...parsed }));
-    }
-    const agEnabled = localStorage.getItem('acc_agentic_enabled');
-    if (agEnabled === 'true') setAgenticEnabled(true);
-    const agCreds = localStorage.getItem('acc_agentic_creds');
-    if (agCreds) setAgenticCreds(JSON.parse(agCreds));
-  }, []);
-
-  // Toggle a source
-  const toggleSource = (key: string) => {
-    const source = SOURCES.find(s => s.key === key);
-    if (!source) return;
-
-    // If it's a paid source and currently OFF, show setup modal
-    if (source.needsCreds && !activeSources[key]) {
-      if (!agenticEnabled || !agenticCreds[key]) {
-        setSetupModal(key);
-        return;
-      }
-    }
-
-    const updated = { ...activeSources, [key]: !activeSources[key] };
-    setActiveSources(updated);
-    localStorage.setItem('acc_sources', JSON.stringify(updated));
-  };
-
-  // Save credentials and enable source
-  const saveCredsAndEnable = () => {
-    if (!setupModal || !credUsername || !credPassword) return;
-
-    // Save creds
-    const updatedCreds = { ...agenticCreds, [setupModal]: { username: credUsername, password: credPassword } };
-    setAgenticCreds(updatedCreds);
-    localStorage.setItem('acc_agentic_creds', JSON.stringify(updatedCreds));
-
-    // Enable agentic
-    setAgenticEnabled(true);
-    localStorage.setItem('acc_agentic_enabled', 'true');
-
-    // Turn on source
-    const updated = { ...activeSources, [setupModal]: true };
-    setActiveSources(updated);
-    localStorage.setItem('acc_sources', JSON.stringify(updated));
-
-    // Reset form
-    setSetupModal(null);
-    setCredUsername('');
-    setCredPassword('');
-  };
-
-  const removeCreds = (key: string) => {
-    const updatedCreds = { ...agenticCreds };
-    delete updatedCreds[key];
-    setAgenticCreds(updatedCreds);
-    localStorage.setItem('acc_agentic_creds', JSON.stringify(updatedCreds));
-
-    const updated = { ...activeSources, [key]: false };
-    setActiveSources(updated);
-    localStorage.setItem('acc_sources', JSON.stringify(updated));
-  };
-
-  // Unified search across all active sources
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    setSelectedResult(null);
-    setSearchError(null);
-    setSearchResults([]);
-    setSourceCounts({});
-    setAiSummary(null);
-    setSourceFilter('all');
-
-    const allResults: SearchResult[] = [];
-    const counts: Record<string, number> = {};
-    const searches: Promise<SearchResult[]>[] = [];
-
-    // CourtListener
-    if (activeSources.courtlistener) {
-      searches.push(
-        fetch(`${FUNCTIONS_BASE}/searchCaseLaw?q=${encodeURIComponent(searchQuery)}&type=o`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            if (!data?.results) return [];
-            const results = data.results.slice(0, 15).map((item: any) => ({
-              id: `cl-${item.cluster_id || item.id || Math.random().toString(36).slice(2)}`,
-              caseName: item.caseName || item.case_name || 'Untitled',
-              citation: item.citation?.[0] || item.neutralCite || '',
-              court: item.court || item.court_id || '',
-              dateFiled: item.dateFiled || item.date_filed || '',
-              snippet: (item.snippet || item.opinions?.[0]?.snippet || '').replace(/<[^>]*>/g, ''),
-              url: `https://www.courtlistener.com${item.absolute_url || ''}`,
-              fullText: item.text || item.plain_text || '',
-              source: 'courtlistener' as const,
-            }));
-            counts.courtlistener = results.length;
-            return results;
-          })
-          .catch(() => { counts.courtlistener = 0; return []; })
-      );
-    }
-
-    // Google Scholar — use CourtListener with broader search as reliable proxy
-    // (Google Scholar blocks server-side requests; CourtListener has overlapping coverage)
-    if (activeSources.scholar) {
-      searches.push(
-        fetch(`${FUNCTIONS_BASE}/searchCaseLaw?q=${encodeURIComponent(searchQuery + ' court:scotus OR court:ca2 OR court:nyappdiv')}&type=o`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            if (!data?.results) return [];
-            const results = data.results.slice(0, 10).map((item: any) => ({
-              id: `scholar-${item.cluster_id || item.id || Math.random().toString(36).slice(2)}`,
-              caseName: item.caseName || item.case_name || 'Untitled',
-              citation: item.citation?.[0] || item.neutralCite || '',
-              court: item.court || item.court_id || '',
-              dateFiled: item.dateFiled || item.date_filed || '',
-              snippet: (item.snippet || item.opinions?.[0]?.snippet || '').replace(/<[^>]*>/g, ''),
-              url: `https://www.courtlistener.com${item.absolute_url || ''}`,
-              fullText: item.text || item.plain_text || '',
-              source: 'scholar' as const,
-            }));
-            counts.scholar = results.length;
-            return results;
-          })
-          .catch(() => { counts.scholar = 0; return []; })
-      );
-    }
-
-    // RECAP (PACER federal court filings via CourtListener)
-    if (activeSources.recap) {
-      searches.push(
-        fetch(`${FUNCTIONS_BASE}/searchCaseLaw?q=${encodeURIComponent(searchQuery)}&type=r`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            if (!data?.results) return [];
-            const results = data.results.slice(0, 10).map((item: any) => ({
-              id: `recap-${item.docket_id || item.id || Math.random().toString(36).slice(2)}`,
-              caseName: item.caseName || item.case_name || 'Untitled',
-              citation: item.docketNumber || item.docket_number || '',
-              court: item.court || item.court_id || '',
-              dateFiled: item.dateFiled || item.date_filed || '',
-              snippet: (item.snippet || item.description || '').replace(/<[^>]*>/g, ''),
-              url: item.absolute_url ? `https://www.courtlistener.com${item.absolute_url}` : '',
-              fullText: '',
-              source: 'recap' as const,
-            }));
-            counts.recap = results.length;
-            return results;
-          })
-          .catch(() => { counts.recap = 0; return []; })
-      );
-    }
-
-    // Justia — use CourtListener with state court focus as reliable proxy
-    if (activeSources.justia) {
-      searches.push(
-        fetch(`${FUNCTIONS_BASE}/searchCaseLaw?q=${encodeURIComponent(searchQuery + ' court:ny OR court:nysupct OR court:nyfamct')}&type=o`)
-          .then(r => r.ok ? r.json() : null)
-          .then(data => {
-            if (!data?.results) return [];
-            const results = data.results.slice(0, 10).map((item: any) => ({
-              id: `justia-${item.cluster_id || item.id || Math.random().toString(36).slice(2)}`,
-              caseName: item.caseName || item.case_name || 'Untitled',
-              citation: item.citation?.[0] || item.neutralCite || '',
-              court: item.court || item.court_id || '',
-              dateFiled: item.dateFiled || item.date_filed || '',
-              snippet: (item.snippet || item.opinions?.[0]?.snippet || '').replace(/<[^>]*>/g, ''),
-              url: `https://www.courtlistener.com${item.absolute_url || ''}`,
-              fullText: item.text || item.plain_text || '',
-              source: 'justia' as const,
-            }));
-            counts.justia = results.length;
-            return results;
-          })
-          .catch(() => { counts.justia = 0; return []; })
-      );
-    }
-
-    // Premium sources — route through server-side agent service
-    const agentSources = ['westlaw','thomson','lexisnexis','bloomberg','heinonline','fastcase','vlex','justcite','docketnav','jstor','ebsco','oxford','cambridge','proquest','vitallaw'] as const;
-    for (const src of agentSources) {
-      if (activeSources[src] && agenticCreds[src]) {
-        searches.push(
-          fetch(`${FUNCTIONS_BASE}/agentSearch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              query: searchQuery,
-              source: src === 'thomson' ? 'westlaw' : src, // Thomson uses Westlaw
-              credentials: agenticCreds[src],
-              maxResults: 15,
-            }),
-          })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-              if (!data?.results) { counts[src] = 0; return []; }
-              const results = data.results.map((item: any) => ({
-                ...item,
-                source: src as any,
-              }));
-              counts[src] = results.length;
-              return results;
-            })
-            .catch(() => { counts[src] = 0; return []; })
-        );
-      }
-    }
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
+    const userMessage: Message = { id: `msg_${Date.now()}`, role: 'user', content: input.trim(), timestamp: new Date() };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
 
     try {
-      const results = await Promise.all(searches);
-      results.forEach(r => allResults.push(...r));
-
-      // Sort: Westlaw first, then Thomson, then others
-      const sourceOrder: Record<string, number> = { westlaw: 0, lexisnexis: 1, thomson: 2, bloomberg: 3, heinonline: 4, fastcase: 5, vlex: 6, justcite: 7, docketnav: 8, jstor: 9, ebsco: 10, oxford: 11, cambridge: 12, proquest: 13, vitallaw: 14, courtlistener: 15, scholar: 16, justia: 17, recap: 18 };
-      allResults.sort((a, b) => (sourceOrder[a.source] ?? 9) - (sourceOrder[b.source] ?? 9));
-
-      setSearchResults(allResults);
-      setSourceCounts(counts);
-
-      if (allResults.length === 0) {
-        setSearchError('No results found. Try different search terms.');
-      } else {
-        // AI Summary
-        setIsSummarizing(true);
-        fetch(`${FUNCTIONS_BASE}/summarizeResults`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: searchQuery,
-            results: allResults.slice(0, 10).map(r => ({ caseName: r.caseName, citation: r.citation, court: r.court, dateFiled: r.dateFiled, snippet: r.snippet, source: r.source })),
-            caseContext: currentCase ? `${currentCase.client} - ${currentCase.charges}` : undefined,
-          }),
-        })
-          .then(r => r.ok ? r.json() : null)
-          .then(data => { if (data?.summary) setAiSummary(data.summary); })
-          .catch(() => {})
-          .finally(() => setIsSummarizing(false));
+      let response: Message;
+      switch (analysisMode) {
+        case 'multi-agent': response = await handleMultiAgent(userMessage.content); break;
+        case 'red-team': response = await handleRedTeam(userMessage.content); break;
+        case 'research': response = await handleResearch(userMessage.content); break;
+        case 'citation': response = await handleCitation(userMessage.content); break;
+        default: response = await handleStandard(userMessage.content);
       }
-    } catch {
-      setSearchError('Search failed. Please try again.');
-    } finally {
-      setIsSearching(false);
+      setMessages(prev => [...prev, response]);
+    } catch (error) {
+      setMessages(prev => [...prev, { id: `msg_${Date.now()}`, role: 'ai', content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`, timestamp: new Date() }]);
     }
+    setIsLoading(false);
   };
 
-  const getSource = (key: string) => SOURCES.find(s => s.key === key)!;
-  const filteredResults = sourceFilter === 'all' ? searchResults : searchResults.filter(r => r.source === sourceFilter);
-  const setupSource = setupModal ? SOURCES.find(s => s.key === setupModal) : null;
+  const handleStandard = async (query: string): Promise<Message> => {
+    let ragContext: RAGContext | undefined;
+    if (useRAG) ragContext = await buildRAGContext(query, { caseId: currentCase?.id });
+    const prompt = `${systemPrompt}\n${ragContext?.formattedContext ? `\nRELEVANT CONTEXT:\n${ragContext.formattedContext}\n` : ''}`;
+    let content = '';
+    await streamLLM('cerebras', [
+      { role: 'system', content: prompt },
+      ...messages.filter(m => m.role !== 'system').slice(-10).map(m => ({ role: m.role === 'ai' ? 'assistant' as const : 'user' as const, content: m.content })),
+      { role: 'user', content: query },
+    ], (chunk) => { content += chunk; }, { task: 'chat' as TaskType });
+    return { id: `msg_${Date.now()}`, role: 'ai', content, timestamp: new Date(), ragContext };
+  };
+
+  const handleCitation = async (query: string): Promise<Message> => {
+    const ragContext = await buildRAGContext(query, { caseId: currentCase?.id });
+    let content = '';
+    await streamLLM('cerebras', [
+      { role: 'system', content: `You are in CITATION MODE. You MUST cite legal authority for EVERY legal claim.\n${ragContext?.formattedContext ? `SOURCES:\n${ragContext.formattedContext}` : ''}\nNEVER fabricate citations.` },
+      { role: 'user', content: query },
+    ], (chunk) => { content += chunk; }, { task: 'citation' as TaskType });
+    const citations: string[] = [];
+    let match;
+    const re = /\[([^\]]+)\]/g;
+    while ((match = re.exec(content)) !== null) citations.push(match[1]);
+    return { id: `msg_${Date.now()}`, role: 'ai', content, timestamp: new Date(), citations: [...new Set(citations)], ragContext };
+  };
+
+  const handleMultiAgent = async (query: string): Promise<Message> => {
+    const caseContext = currentCase ? `Case: ${currentCase.client}\nCharges: ${currentCase.charges}\nCounty: ${currentCase.county}` : undefined;
+    const report = await runMultiAgentAnalysis(query, selectedAgents, { caseId: currentCase?.id, caseContext, useRAG, parallel: true });
+    const personas = getAgentPersonas();
+    let content = `## 👥 Multi-Agent Analysis\n\n**Query:** "${report.query}"\n\n`;
+    for (const a of report.analyses) {
+      const p = personas.find(p => p.role === a.role);
+      content += `---\n\n### ${p?.icon || '👤'} ${a.agentName}\n*${p?.description || a.role}*\n\n${a.analysis}\n\n`;
+    }
+    content += `---\n\n## 🎯 Synthesis\n\n${report.synthesis}\n\n`;
+    if (report.actionItems.length > 0) { content += `### Recommended Actions\n`; report.actionItems.forEach((item, i) => { content += `${i + 1}. ${item}\n`; }); }
+    return { id: `msg_${Date.now()}`, role: 'ai', content, timestamp: new Date(), multiAgentReport: report };
+  };
+
+  const handleRedTeam = async (query: string): Promise<Message> => {
+    const caseContext = currentCase ? `Case: ${currentCase.client}\nCharges: ${currentCase.charges}\nCounty: ${currentCase.county}` : undefined;
+    const report = await runRedTeamAnalysis(query, caseContext);
+    const content = `## 🔴 RED TEAM ANALYSIS\n\n${report.analyses.map(a => `### ${getAgentPersonas().find(p => p.role === a.role)?.icon || '👤'} ${a.agentName}\n${a.analysis}`).join('\n\n---\n\n')}\n\n## 🎯 Synthesis\n\n${report.synthesis}\n\n### Action Items\n${report.actionItems.map((item, i) => `${i + 1}. ${item}`).join('\n')}`;
+    return { id: `msg_${Date.now()}`, role: 'ai', content, timestamp: new Date(), multiAgentReport: report };
+  };
+
+  const handleResearch = async (query: string): Promise<Message> => {
+    const results = await searchAllLegalDatabases(query);
+    const content = `## 🔍 Legal Research Results\n\n**Query:** "${query}"\n\n### 📜 Statutes (${results.statutes.length})\n${results.statutes.slice(0, 5).map(s => `- **${s.citation}**: ${s.title}`).join('\n') || 'None found'}\n\n### ⚖️ Cases (${results.cases.length})\n${results.cases.slice(0, 5).map(c => `- **${c.name}** (${c.court}, ${c.date})\n  ${c.citation}`).join('\n') || 'None found'}`;
+    return { id: `msg_${Date.now()}`, role: 'ai', content, timestamp: new Date() };
+  };
+
+  const toggleAgent = (role: AgentRole) => {
+    setSelectedAgents(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  };
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-slate-50">
-      {/* Header + Search */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-lg font-bold text-slate-900">Research Desk</h1>
-            {currentCase && (
-              <span className="text-xs bg-navy-50 text-navy-800 px-2.5 py-1 rounded-lg font-medium hidden sm:block">
-                📋 {currentCase.client} — {currentCase.charges}
-              </span>
-            )}
-          </div>
-
-          {/* Search Bar */}
-          <div className="flex gap-2 mb-3">
-            <div className="flex-1 relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search case law across all active sources..."
-                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-300"
-              />
-            </div>
-            <DictationButton
-              onTranscript={(text) => setSearchQuery(text)}
-              size="md"
-            />
-            <button
-              onClick={handleSearch}
-              disabled={isSearching || !searchQuery.trim()}
-              className="px-6 py-2.5 bg-navy-900 hover:bg-navy-800 text-white text-sm font-semibold rounded-xl disabled:opacity-50 flex items-center gap-2 transition-colors"
-            >
-              {isSearching ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>Search</>}
-            </button>
-          </div>
-
-          {/* Source Toggles */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Sources:</span>
-            {extensionAvailable && (
-              <span className="text-[9px] px-2 py-0.5 bg-green-50 text-green-600 border border-green-200 rounded-full font-medium">🤖 Agent Active</span>
-            )}
-            {SOURCES.map(source => {
-              const isOn = activeSources[source.key];
-              return (
-                <button
-                  key={source.key}
-                  onClick={() => toggleSource(source.key)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                    isOn ? source.activeColor : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>{source.icon}</span>
-                  <span>{source.shortLabel}</span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
-                    isOn ? 'bg-white/20 text-inherit' : 'bg-slate-100 text-slate-400'
-                  }`}>
-                    {isOn ? 'ON' : 'OFF'}
-                  </span>
-                  {!source.free && isOn && agenticCreds[source.key] && (
-                    <span className="text-[8px] opacity-70">🤖</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+    <div className="h-[calc(100vh-64px)] flex flex-col">
+      {/* Tab Bar */}
+      <div className="bg-white border-b border-slate-200 px-2 sm:px-4 pt-2 sm:pt-3">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-colors ${
+              activeTab === 'search'
+                ? 'border-navy-600 text-navy-800 bg-slate-50'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            🔍 Search Database
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-colors ${
+              activeTab === 'chat'
+                ? 'border-navy-600 text-navy-800 bg-slate-50'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            💬 Chat with AI
+          </button>
         </div>
       </div>
 
-      {/* Setup Modal */}
-      {setupModal && setupSource && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSetupModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-900 to-purple-900 p-5 text-white">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">{setupSource.icon}</div>
-                <div>
-                  <h3 className="font-bold text-lg">Connect {setupSource.label}</h3>
-                  <p className="text-indigo-200 text-xs">Enable AI-powered search via browser automation</p>
+      {/* Tab Content */}
+      {activeTab === 'search' ? (
+        <SearchPanel />
+      ) : (
+        <div className="flex-1 flex flex-col">
+          {/* Analysis Mode Selector */}
+          <div className="px-4 py-3 border-b border-slate-200 bg-white">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {analysisModes.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => setAnalysisMode(m.id as AnalysisMode)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+                    analysisMode === m.id ? 'bg-navy-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>{m.icon}</span>
+                  {m.name}
+                </button>
+              ))}
+              {!isProSe && (
+                <div className="ml-auto flex items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm text-slate-600">
+                    <input type="checkbox" checked={useRAG} onChange={(e) => setUseRAG(e.target.checked)} className="rounded border-slate-300" />
+                    RAG
+                  </label>
                 </div>
-              </div>
-            </div>
-
-            {/* Disclaimer */}
-            <div className="p-4 bg-amber-50 border-b border-amber-100">
-              <div className="flex gap-2">
-                <span>⚠️</span>
-                <p className="text-[11px] text-amber-700 leading-relaxed">
-                  Agentic Search uses browser automation to access {setupSource.label} using <strong>your own credentials</strong>. 
-                  Automated access may be subject to your provider&apos;s terms of service. 
-                  Credentials are stored locally on your device only. <strong>Beta feature.</strong>
-                </p>
-              </div>
-            </div>
-
-            {/* Credential Form */}
-            <div className="p-5 space-y-4">
-              {agenticCreds[setupSource.key] ? (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">✓ Credentials saved</span>
-                    <span className="text-xs text-slate-500">{agenticCreds[setupSource.key].username}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        const updated = { ...activeSources, [setupSource.key]: true };
-                        setActiveSources(updated);
-                        localStorage.setItem('acc_sources', JSON.stringify(updated));
-                        setAgenticEnabled(true);
-                        localStorage.setItem('acc_agentic_enabled', 'true');
-                        setSetupModal(null);
-                      }}
-                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors"
-                    >
-                      Enable {setupSource.shortLabel}
-                    </button>
-                    <button onClick={() => removeCreds(setupSource.key)} className="px-4 py-2.5 text-red-600 hover:bg-red-50 text-sm font-medium rounded-xl">Remove</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600 mb-1.5 block">Username / Email</label>
-                    <input type="text" value={credUsername} onChange={e => setCredUsername(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="your@email.com" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-600 mb-1.5 block">Password</label>
-                    <input type="password" value={credPassword} onChange={e => setCredPassword(e.target.value)} className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" placeholder="••••••••" />
-                  </div>
-                  <p className="text-[10px] text-slate-400">🔒 Credentials are encrypted and stored locally on your device only.</p>
-                  <div className="flex gap-2">
-                    <button onClick={saveCredsAndEnable} disabled={!credUsername || !credPassword} className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 transition-colors">
-                      Connect & Enable
-                    </button>
-                    <button onClick={() => { setSetupModal(null); setCredUsername(''); setCredPassword(''); }} className="px-4 py-2.5 text-slate-500 hover:bg-slate-100 text-sm font-medium rounded-xl">Cancel</button>
-                  </div>
-                </>
               )}
             </div>
+            {analysisMode === 'multi-agent' && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {getAgentPersonas().map(persona => (
+                  <button
+                    key={persona.role}
+                    onClick={() => toggleAgent(persona.role)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                      selectedAgents.includes(persona.role) ? AGENT_COLORS[persona.role] : 'bg-white text-slate-400 border-slate-200'
+                    }`}
+                  >
+                    <span>{persona.icon}</span>
+                    {persona.name.split(',')[0]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Tech stack footer */}
-            <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-center gap-2">
-              <span className="text-[9px] px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-400">🤖 Cloud Browser Agent</span>
-              <span className="text-[9px] px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-400">Cerebras AI</span>
-              <span className="text-[9px] px-2 py-0.5 bg-white border border-slate-200 rounded-full text-slate-400">End-to-end encrypted</span>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-20 h-20 bg-gradient-to-br from-navy-500 to-navy-700 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <span className="text-4xl">🧠</span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-800 mb-2">Research Desk AI</h2>
+                <p className="text-slate-500 max-w-md mx-auto mb-8">Case law search, statute lookup, legal Q&A — all powered by AI with RAG grounding.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                  {suggestions.map((s, i) => (
+                    <button key={i} onClick={() => setInput(s.prompt)} className="p-4 bg-white border border-slate-200 rounded-xl text-left hover:shadow-sm transition-all">
+                      <span className="text-sm font-medium text-slate-700">{s.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map((message) => (
+              <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                  message.role === 'user' ? 'bg-navy-900 text-white' : 'bg-white border border-slate-200'
+                }`}>
+                  {message.role === 'ai' ? (
+                    <div className="prose prose-sm max-w-none text-slate-700">
+                      {message.content.split('\n').map((line, i) => {
+                        if (line.startsWith('## ')) return <h2 key={i} className="text-lg font-bold text-slate-900 mt-4 mb-2">{line.replace('## ', '')}</h2>;
+                        if (line.startsWith('### ')) return <h3 key={i} className="text-base font-semibold text-slate-800 mt-3 mb-1">{line.replace('### ', '')}</h3>;
+                        if (line.startsWith('- ')) return <li key={i} className="ml-4">{line.replace('- ', '')}</li>;
+                        if (line.startsWith('---')) return <hr key={i} className="my-4 border-slate-200" />;
+                        if (line.trim() === '') return <br key={i} />;
+                        return <p key={i} className="my-1">{line}</p>;
+                      })}
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  )}
+                  {message.citations && message.citations.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-100">
+                      <p className="text-xs font-semibold text-slate-500 mb-2">Citations:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {message.citations.map((c, i) => (
+                          <span key={i} className="text-xs bg-navy-50 text-navy-800 px-2 py-1 rounded font-medium">{c}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {message.ragContext && message.ragContext.results.length > 0 && (
+                    <div className="mt-2 text-xs text-slate-400">📚 Used {message.ragContext.results.length} knowledge sources</div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-navy-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-navy-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-navy-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <span className="ml-2 text-sm text-slate-500">
+                      {analysisMode === 'multi-agent' ? 'Consulting multiple agents...' :
+                       analysisMode === 'red-team' ? 'Running adversarial analysis...' :
+                       analysisMode === 'research' ? 'Searching legal databases...' : 'Thinking...'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="p-4 border-t border-slate-200 bg-white">
+            <div className="flex gap-3">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder="Ask a legal question, search case law, or research a statute..."
+                className="flex-1 px-4 py-3 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-navy-500/20 focus:border-navy-300"
+                rows={2}
+              />
+              <DictationButton onTranscript={(text) => setInput(prev => prev ? prev + ' ' + text : text)} size="md" />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                className="px-6 bg-navy-900 hover:bg-navy-800 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isLoading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                )}
+              </button>
             </div>
+            <p className="text-xs text-slate-400 mt-2">
+              {analysisMode === 'multi-agent' && `Using ${selectedAgents.length} agents`}
+              {analysisMode === 'citation' && '📚 Citation mode: All claims must be supported'}
+              {analysisMode === 'red-team' && '⚔️ Red team: Adversarial stress testing'}
+            </p>
           </div>
         </div>
       )}
-
-      {/* Results Area */}
-      <div className="flex-1 overflow-hidden flex">
-        <div className={`${selectedResult ? 'w-1/2' : 'w-full'} overflow-y-auto transition-all`}>
-          {/* AI Summary */}
-          {(isSummarizing || aiSummary) && (
-            <div className="mx-4 mt-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-5 h-5 rounded-md bg-indigo-100 flex items-center justify-center">
-                  {isSummarizing ? (
-                    <div className="w-3 h-3 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
-                  ) : (
-                    <span className="text-[10px]">🤖</span>
-                  )}
-                </div>
-                <span className="text-xs font-semibold text-indigo-900">AI Research Summary</span>
-                <span className="text-[9px] px-1.5 py-0.5 bg-orange-100 text-orange-600 rounded-full font-medium">Cerebras</span>
-              </div>
-              {isSummarizing ? (
-                <div className="space-y-2">
-                  <div className="h-3 bg-indigo-200/50 rounded animate-pulse w-full"></div>
-                  <div className="h-3 bg-indigo-200/50 rounded animate-pulse w-4/5"></div>
-                  <div className="h-3 bg-indigo-200/50 rounded animate-pulse w-3/5"></div>
-                </div>
-              ) : aiSummary ? (
-                <div className="text-xs text-indigo-900 leading-relaxed whitespace-pre-wrap">{aiSummary}</div>
-              ) : null}
-            </div>
-          )}
-
-          {/* Premium sources agent status */}
-          {(() => {
-            const activePremium = SOURCES.filter(s => s.needsCreds && activeSources[s.key]);
-            if (activePremium.length === 0) return null;
-
-            // Show real-time agent status for each active premium source
-            const activeStatuses = Object.entries(agentStatus).filter(([, s]) => s.status !== 'complete');
-            if (activeStatuses.length > 0) {
-              return activeStatuses.map(([jobId, s]) => (
-                <div key={jobId} className="mx-4 mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center gap-2">
-                  {s.status === 'error' ? (
-                    <span className="text-red-500">⚠️</span>
-                  ) : (
-                    <div className="w-4 h-4 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin"></div>
-                  )}
-                  <span className="text-xs text-indigo-700">{s.message}</span>
-                  {extensionAvailable && <span className="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-600 rounded-full ml-auto">🤖 Agent</span>}
-                </div>
-              ));
-            }
-
-            // Show "coming soon" only if extension not installed and searching
-            if (isSearching && !extensionAvailable) {
-              return (
-                <div className="mx-4 mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center gap-2">
-                  <span className="text-xs text-indigo-700">
-                    Install the Research Agent extension for agentic {activePremium.map(s => s.shortLabel).join(', ')} search
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.5 bg-amber-100 text-amber-600 rounded-full ml-auto">Extension Required</span>
-                </div>
-              );
-            }
-            return null;
-          })()}
-
-          {/* Source Filter Pills */}
-          {searchResults.length > 0 && (
-            <div className="px-4 pt-3 flex items-center gap-2 flex-wrap">
-              <button onClick={() => setSourceFilter('all')} className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${sourceFilter === 'all' ? 'bg-navy-900 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
-                All ({searchResults.length})
-              </button>
-              {Object.entries(sourceCounts).filter(([, count]) => count > 0).map(([key, count]) => {
-                const src = getSource(key);
-                return (
-                  <button key={key} onClick={() => setSourceFilter(key)} className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${sourceFilter === key ? src.activeColor : `${src.badgeColor} border border-transparent`}`}>
-                    {src.icon} {src.shortLabel} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {searchError && !isSearching && (
-            <div className="mx-4 mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">{searchError}</div>
-          )}
-
-          {/* Results List or Empty State */}
-          {searchResults.length === 0 && !isSearching && !searchError ? (
-            <div className="p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              </div>
-              <h3 className="font-semibold text-slate-600 mb-1">Multi-Source Case Law Search</h3>
-              <p className="text-sm text-slate-400 max-w-md mx-auto mb-4">
-                Search across {Object.values(activeSources).filter(Boolean).length} active sources simultaneously.
-                {(!activeSources.westlaw || !activeSources.thomson) && ' Enable Westlaw or Thomson Reuters above for premium results.'}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {['ineffective assistance NY', 'custody best interests', 'suppression motion CPL', 'bail reform', 'Article 10 neglect'].map(q => (
-                  <button key={q} onClick={() => setSearchQuery(q)} className="text-xs px-3 py-1.5 bg-white border border-slate-200 rounded-full text-slate-600 hover:bg-slate-50 transition-colors">{q}</button>
-                ))}
-              </div>
-            </div>
-          ) : isSearching ? (
-            <div className="p-4 space-y-3">{[1,2,3,4,5].map(i => <div key={i} className="bg-white rounded-xl p-4 animate-pulse border border-slate-100"><div className="h-4 bg-slate-200 rounded w-3/4 mb-2"></div><div className="h-3 bg-slate-200 rounded w-1/2 mb-2"></div><div className="h-3 bg-slate-200 rounded w-full"></div></div>)}</div>
-          ) : (
-            <div className="p-4 space-y-2">
-              {filteredResults.map(result => {
-                const src = getSource(result.source);
-                return (
-                  <div
-                    key={result.id}
-                    onClick={() => setSelectedResult(result)}
-                    className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-sm ${
-                      selectedResult?.id === result.id ? 'border-navy-300 shadow-sm ring-1 ring-navy-100' : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${src.badgeColor}`}>
-                        {src.icon} {src.shortLabel}
-                      </span>
-                      {result.citation && <span className="text-[10px] font-mono text-slate-400">{result.citation}</span>}
-                    </div>
-                    <h4 className="font-semibold text-sm text-slate-900 line-clamp-2 mb-1">{result.caseName}</h4>
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{result.snippet}</p>
-                    {(result.court || result.dateFiled) && (
-                      <div className="text-[10px] text-slate-400 mt-2">{result.court}{result.dateFiled ? ` • ${result.dateFiled}` : ''}</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Result Detail Panel */}
-        {selectedResult && (() => {
-          const src = getSource(selectedResult.source);
-          return (
-            <div className="w-1/2 border-l border-slate-200 bg-white flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-slate-200 bg-slate-50">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${src.badgeColor}`}>{src.icon} {src.shortLabel}</span>
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-900">{selectedResult.caseName}</h3>
-                    <div className="text-[10px] text-slate-500 mt-0.5">{selectedResult.citation}{selectedResult.court ? ` • ${selectedResult.court}` : ''}{selectedResult.dateFiled ? ` • ${selectedResult.dateFiled}` : ''}</div>
-                  </div>
-                  <button onClick={() => setSelectedResult(null)} className="p-1 hover:bg-slate-200 rounded flex-shrink-0">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <a href={selectedResult.url} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-navy-900 hover:bg-navy-800 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors">View Full Opinion ↗</a>
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                {selectedResult.fullText ? (
-                  <div className="prose prose-sm prose-slate max-w-none whitespace-pre-wrap text-xs leading-relaxed">{selectedResult.fullText}</div>
-                ) : (
-                  <div>
-                    <p className="text-sm text-slate-600 leading-relaxed mb-4">{selectedResult.snippet}</p>
-                    <a href={selectedResult.url} target="_blank" rel="noopener noreferrer" className="text-sm text-navy-800 hover:underline font-medium">Read full opinion →</a>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })()}
-      </div>
     </div>
   );
 }
