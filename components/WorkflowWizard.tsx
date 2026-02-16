@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ReactNode } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ export interface FieldDef {
   tooltip: string;
   options?: string[];
   required?: boolean;
-  proSeLabel?: string; // simpler label for pro se
+  proSeLabel?: string;
 }
 
 export interface ResearchSource {
@@ -42,21 +42,56 @@ interface WorkflowWizardPageProps {
   isProSe: boolean;
 }
 
+// ─── Saved Workflow Types ────────────────────────────────────────────────────
+
+interface SavedWorkflow {
+  instanceId: string;
+  workflowId: string;
+  workflowTitle: string;
+  workflowIcon: string;
+  caseName: string;
+  caseId: string;
+  step: number;
+  totalSteps: number;
+  formData: Record<string, string>;
+  selectedSources: string[];
+  generatedContent: string;
+  startedAt: string; // ISO
+  completedAt?: string; // ISO
+  documentName: string;
+}
+
+const STORAGE_KEY = 'acc_workflows';
+
+function loadWorkflows(): SavedWorkflow[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveWorkflows(wfs: SavedWorkflow[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(wfs));
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
 const mockCases = [
   { id: '1', name: 'Smith v. Smith (2024-CV-1234)' },
   { id: '2', name: 'Johnson Matter (2024-CV-5678)' },
   { id: '3', name: 'Davis v. Davis (2024-CV-9012)' },
-];
-
-const mockActiveWorkflows = [
-  { id: 'a1', workflowTitle: 'Petition for Divorce', caseName: 'Smith v. Smith', step: 3, startedAt: '2 hours ago' },
-  { id: 'a2', workflowTitle: 'Financial Disclosure', caseName: 'Johnson Matter', step: 2, startedAt: 'Yesterday' },
-];
-
-const mockCompletedWorkflows = [
-  { id: 'c1', workflowTitle: 'Settlement Agreement', caseName: 'Davis v. Davis', completedAt: 'Jan 15, 2025', documents: ['Settlement_Agreement_Davis.pdf', 'Settlement_Agreement_Davis.docx'] },
 ];
 
 // ─── Step Indicator ──────────────────────────────────────────────────────────
@@ -291,13 +326,15 @@ function StepExport({ documentName, isProSe }: { documentName: string; isProSe: 
 
 // ─── Wizard Component ────────────────────────────────────────────────────────
 
-function WorkflowWizardModal({ workflow, onClose, isProSe }: { workflow: WorkflowDefinition; onClose: () => void; isProSe: boolean }) {
-  const [step, setStep] = useState(0);
-  const [selectedCase, setSelectedCase] = useState('');
-  const [formData, setFormData] = useState<Record<string, string>>({});
-  const [selectedSources, setSelectedSources] = useState<string[]>(workflow.researchSources.map(s => s.id));
+function WorkflowWizardModal({ workflow, onClose, isProSe, resumeInstance, onSave }: { workflow: WorkflowDefinition; onClose: () => void; isProSe: boolean; resumeInstance?: SavedWorkflow; onSave: (instance: SavedWorkflow, completed: boolean) => void }) {
+  const [step, setStep] = useState(resumeInstance?.step || 0);
+  const [selectedCase, setSelectedCase] = useState(resumeInstance?.caseId || '');
+  const [formData, setFormData] = useState<Record<string, string>>(resumeInstance?.formData || {});
+  const [selectedSources, setSelectedSources] = useState<string[]>(resumeInstance?.selectedSources || workflow.researchSources.map(s => s.id));
+  const [instanceId] = useState(resumeInstance?.instanceId || `wf_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+  const [startedAt] = useState(resumeInstance?.startedAt || new Date().toISOString());
 
-  const totalSteps = isProSe ? 4 : 5; // Pro Se skips research step
+  const totalSteps = isProSe ? 4 : 5;
   const labels = isProSe
     ? ['Select Case', 'Your Info', 'Generate', 'Download']
     : ['Case', 'Info', 'Research', 'Generate', 'Export'];
@@ -307,7 +344,42 @@ function WorkflowWizardModal({ workflow, onClose, isProSe }: { workflow: Workflo
     return true;
   };
 
-  const currentStep = isProSe && step >= 2 ? step + 1 : step; // map pro se steps
+  const buildInstance = useCallback((s: number): SavedWorkflow => ({
+    instanceId,
+    workflowId: workflow.id,
+    workflowTitle: workflow.title,
+    workflowIcon: workflow.icon,
+    caseName: mockCases.find(c => c.id === selectedCase)?.name || 'New Case',
+    caseId: selectedCase,
+    step: s,
+    totalSteps,
+    formData,
+    selectedSources,
+    generatedContent: '',
+    startedAt,
+    documentName: workflow.documentName,
+  }), [instanceId, workflow, selectedCase, totalSteps, formData, selectedSources, startedAt]);
+
+  // Auto-save on step change
+  useEffect(() => {
+    if (selectedCase) {
+      onSave(buildInstance(step), false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const handleClose = () => {
+    // Save progress when closing mid-workflow
+    if (selectedCase && step < totalSteps - 1) {
+      onSave(buildInstance(step), false);
+    }
+    onClose();
+  };
+
+  const handleDone = () => {
+    onSave(buildInstance(step), true);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 animate-fade-in">
@@ -321,7 +393,7 @@ function WorkflowWizardModal({ workflow, onClose, isProSe }: { workflow: Workflo
               {selectedCase && <p className="text-xs text-blue-600">Working on: {mockCases.find(c => c.id === selectedCase)?.name || 'New Case'}</p>}
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">✕</button>
+          <button onClick={handleClose} className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">✕</button>
         </div>
 
         {/* Content */}
@@ -337,7 +409,7 @@ function WorkflowWizardModal({ workflow, onClose, isProSe }: { workflow: Workflo
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100">
-          <button onClick={() => step === 0 ? onClose() : setStep(step - 1)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
+          <button onClick={() => step === 0 ? handleClose() : setStep(step - 1)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
             {step === 0 ? 'Cancel' : '← Back'}
           </button>
           {step < totalSteps - 1 ? (
@@ -345,7 +417,7 @@ function WorkflowWizardModal({ workflow, onClose, isProSe }: { workflow: Workflo
               Next →
             </button>
           ) : (
-            <button onClick={onClose} className="px-6 py-2 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+            <button onClick={handleDone} className="px-6 py-2 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
               ✓ Done
             </button>
           )}
@@ -360,11 +432,48 @@ function WorkflowWizardModal({ workflow, onClose, isProSe }: { workflow: Workflo
 export default function WorkflowWizardPage({ title, subtitle, icon, iconGradient, workflows, isProSe }: WorkflowWizardPageProps) {
   const [tab, setTab] = useState<'workflows' | 'active' | 'completed'>('workflows');
   const [activeWorkflow, setActiveWorkflow] = useState<WorkflowDefinition | null>(null);
+  const [resumeInstance, setResumeInstance] = useState<SavedWorkflow | undefined>(undefined);
+  const [savedWorkflows, setSavedWorkflows] = useState<SavedWorkflow[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    setSavedWorkflows(loadWorkflows());
+  }, []);
+
+  // Filter for this page's workflows
+  const workflowIds = workflows.map(w => w.id);
+  const activeInstances = savedWorkflows.filter(w => !w.completedAt && workflowIds.includes(w.workflowId));
+  const completedInstances = savedWorkflows.filter(w => !!w.completedAt && workflowIds.includes(w.workflowId));
+
+  const handleSave = (instance: SavedWorkflow, completed: boolean) => {
+    if (completed) instance.completedAt = new Date().toISOString();
+    const all = loadWorkflows();
+    const idx = all.findIndex(w => w.instanceId === instance.instanceId);
+    if (idx >= 0) all[idx] = instance; else all.push(instance);
+    saveWorkflows(all);
+    setSavedWorkflows(all);
+  };
+
+  const handleDelete = (instanceId: string) => {
+    const all = loadWorkflows().filter(w => w.instanceId !== instanceId);
+    saveWorkflows(all);
+    setSavedWorkflows(all);
+    setConfirmDelete(null);
+  };
+
+  const handleResume = (instance: SavedWorkflow) => {
+    const wf = workflows.find(w => w.id === instance.workflowId);
+    if (wf) {
+      setResumeInstance(instance);
+      setActiveWorkflow(wf);
+    }
+  };
 
   const tabs = [
     { id: 'workflows' as const, label: 'Workflows', count: workflows.length },
-    { id: 'active' as const, label: 'Active', count: mockActiveWorkflows.length },
-    { id: 'completed' as const, label: 'Completed', count: mockCompletedWorkflows.length },
+    { id: 'active' as const, label: 'Active', count: activeInstances.length },
+    { id: 'completed' as const, label: 'Completed', count: completedInstances.length },
   ];
 
   return (
@@ -393,7 +502,7 @@ export default function WorkflowWizardPage({ title, subtitle, icon, iconGradient
       {tab === 'workflows' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {workflows.map(w => (
-            <button key={w.id} onClick={() => setActiveWorkflow(w)} className="text-left p-5 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group">
+            <button key={w.id} onClick={() => { setResumeInstance(undefined); setActiveWorkflow(w); }} className="text-left p-5 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group">
               <div className="text-2xl mb-3">{w.icon}</div>
               <h3 className="font-semibold text-slate-800 group-hover:text-blue-700 transition-colors">{w.title}</h3>
               <p className="text-xs text-slate-500 mt-1">{w.description}</p>
@@ -405,21 +514,36 @@ export default function WorkflowWizardPage({ title, subtitle, icon, iconGradient
 
       {tab === 'active' && (
         <div className="space-y-3">
-          {mockActiveWorkflows.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">No active workflows. Start one from the Workflows tab!</div>
-          ) : mockActiveWorkflows.map(w => (
-            <div key={w.id} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
-              <div className="flex-1">
+          {activeInstances.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">📋</div>
+              <p className="text-slate-500 text-sm">No active workflows</p>
+              <p className="text-slate-400 text-xs mt-1">Start a workflow from the Workflows tab — your progress is saved automatically.</p>
+            </div>
+          ) : activeInstances.map(w => (
+            <div key={w.instanceId} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-4">
+              <div className="text-2xl flex-shrink-0">{w.workflowIcon}</div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold text-slate-800 text-sm">{w.workflowTitle}</p>
-                <p className="text-xs text-slate-400">{w.caseName} • Started {w.startedAt}</p>
+                <p className="text-xs text-slate-400 truncate">{w.caseName} • Started {timeAgo(w.startedAt)}</p>
                 <div className="mt-2 flex items-center gap-3">
                   <div className="flex-1 bg-slate-100 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${(w.step / 5) * 100}%` }} />
+                    <div className="bg-blue-500 h-2 rounded-full transition-all" style={{ width: `${(w.step / (w.totalSteps - 1)) * 100}%` }} />
                   </div>
-                  <span className="text-xs text-slate-500">Step {w.step}/5</span>
+                  <span className="text-xs text-slate-500 flex-shrink-0">Step {w.step + 1}/{w.totalSteps}</span>
                 </div>
               </div>
-              <button className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors">Resume</button>
+              <div className="flex gap-2 flex-shrink-0">
+                <button onClick={() => handleResume(w)} className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors">Resume</button>
+                {confirmDelete === w.instanceId ? (
+                  <div className="flex gap-1">
+                    <button onClick={() => handleDelete(w.instanceId)} className="px-2 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700">Yes</button>
+                    <button onClick={() => setConfirmDelete(null)} className="px-2 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200">No</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDelete(w.instanceId)} className="px-3 py-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg text-xs transition-colors" title="Delete">🗑</button>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -427,21 +551,38 @@ export default function WorkflowWizardPage({ title, subtitle, icon, iconGradient
 
       {tab === 'completed' && (
         <div className="space-y-3">
-          {mockCompletedWorkflows.length === 0 ? (
-            <div className="text-center py-12 text-slate-400 text-sm">No completed workflows yet.</div>
-          ) : mockCompletedWorkflows.map(w => (
-            <div key={w.id} className="bg-white rounded-xl border border-slate-200 p-4">
+          {completedInstances.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">✅</div>
+              <p className="text-slate-500 text-sm">No completed workflows yet</p>
+              <p className="text-slate-400 text-xs mt-1">Workflows you finish will appear here with downloadable documents.</p>
+            </div>
+          ) : completedInstances.map(w => (
+            <div key={w.instanceId} className="bg-white rounded-xl border border-slate-200 p-4">
               <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="font-semibold text-slate-800 text-sm">{w.workflowTitle}</p>
-                  <p className="text-xs text-slate-400">{w.caseName} • Completed {w.completedAt}</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{w.workflowIcon}</span>
+                  <div>
+                    <p className="font-semibold text-slate-800 text-sm">{w.workflowTitle}</p>
+                    <p className="text-xs text-slate-400">{w.caseName} • Completed {timeAgo(w.completedAt!)}</p>
+                  </div>
                 </div>
-                <span className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded-full font-medium">✓ Complete</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded-full font-medium">✓ Complete</span>
+                  {confirmDelete === w.instanceId ? (
+                    <div className="flex gap-1">
+                      <button onClick={() => handleDelete(w.instanceId)} className="px-2 py-1.5 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700">Yes</button>
+                      <button onClick={() => setConfirmDelete(null)} className="px-2 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium hover:bg-slate-200">No</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmDelete(w.instanceId)} className="text-red-400 hover:text-red-600 text-xs" title="Delete">🗑</button>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2 mt-3">
-                {w.documents.map((d, i) => (
-                  <button key={i} className="text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors text-slate-600">📄 {d}</button>
-                ))}
+              <div className="flex flex-wrap gap-2 mt-3">
+                <button className="text-xs px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-blue-700">📥 Download PDF</button>
+                <button className="text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors text-slate-600">📥 Download Word</button>
+                <button className="text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors text-slate-600">📁 Add to Case File</button>
               </div>
             </div>
           ))}
@@ -450,7 +591,13 @@ export default function WorkflowWizardPage({ title, subtitle, icon, iconGradient
 
       {/* Wizard Modal */}
       {activeWorkflow && (
-        <WorkflowWizardModal workflow={activeWorkflow} onClose={() => setActiveWorkflow(null)} isProSe={isProSe} />
+        <WorkflowWizardModal
+          workflow={activeWorkflow}
+          onClose={() => { setActiveWorkflow(null); setResumeInstance(undefined); }}
+          isProSe={isProSe}
+          resumeInstance={resumeInstance}
+          onSave={handleSave}
+        />
       )}
     </div>
   );

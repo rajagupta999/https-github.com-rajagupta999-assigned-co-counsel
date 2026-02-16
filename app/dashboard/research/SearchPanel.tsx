@@ -456,7 +456,7 @@ export default function SearchPanel() {
   const setupSource = setupModal ? SOURCES.find(s => s.key === setupModal) : null;
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col bg-slate-50">
+    <div className="h-[calc(100dvh-4rem)] flex flex-col bg-slate-50">
       {/* Header + Search */}
       <div className="bg-white border-b border-slate-200">
         <div className="px-3 sm:px-6 py-3 sm:py-4">

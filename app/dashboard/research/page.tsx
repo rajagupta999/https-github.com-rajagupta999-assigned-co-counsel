@@ -165,7 +165,7 @@ Be thorough, cite authority, and provide actionable analysis.`;
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col">
+    <div className="h-[calc(100dvh-64px)] flex flex-col">
       {/* Tab Bar */}
       <div className="bg-white border-b border-slate-200 px-2 sm:px-4 pt-2 sm:pt-3">
         <div className="flex items-center gap-1 overflow-x-auto">

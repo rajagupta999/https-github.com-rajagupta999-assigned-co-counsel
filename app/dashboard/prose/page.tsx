@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { streamLLM, TaskType } from '@/lib/multiLLM';
 // DashboardShell is provided by the layout
 
 interface GuideStep {
@@ -150,25 +151,24 @@ export default function ProSePage() {
     setAnswer('');
     
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: question }],
-          model: 'claude-3-opus-20240229', // High-quality for legal guidance
-          systemPrompt: `You are a helpful, empathetic legal guide for pro se litigants in New York. 
+      const systemPrompt = `You are a helpful, empathetic legal guide for pro se litigants in New York. 
           Your goal is to explain legal concepts simply, without jargon. 
           Always clarify that you are not a lawyer and this is information, not advice.
           Structure your answer with: **Key Points**, **Next Steps**, and **Resources**.
-          Context: The user is asking about ${selectedType || 'general legal issues'}.`
-        })
-      });
+          Context: The user is asking about ${selectedType || 'general legal issues'}.`;
 
-      if (!response.ok) throw new Error('Failed to get answer');
+      let content = '';
       
-      const data = await response.json();
-      setAnswer(data.role === 'assistant' ? data.content : data.choices[0].message.content); // Handle different API shapes
+      await streamLLM('cerebras', [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: question }
+      ], (chunk) => {
+        content += chunk;
+        setAnswer(prev => prev + chunk);
+      }, { task: 'chat' as TaskType });
+
     } catch (error) {
+      console.error('Error asking question:', error);
       setAnswer('**Error:** I having trouble connecting to the legal helper right now. Please try again in a moment.');
     } finally {
       setIsLoading(false);
