@@ -1,14 +1,13 @@
-import ClientPortal from './ClientPortal';
+import PortalContent from './PortalContent';
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
   return [
     { id: 'client-martinez' },
     { id: 'client-chen' },
     { id: 'client-davis' },
-    { id: 'demo' },
   ];
 }
 
-export default function Page() {
-  return <ClientPortal />;
+export default function ClientPortalPage({ params }: { params: { id: string } }) {
+  return <PortalContent params={params} />;
 }

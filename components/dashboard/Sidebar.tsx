@@ -114,6 +114,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         marketing: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
         receipt_long: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="14" y1="8" x2="8" y2="8"/><line x1="16" y1="12" x2="8" y2="12"/><line x1="13" y1="16" x2="8" y2="16"/></svg>,
         cloud: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>,
+        discovery: (c: string) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>,
     };
 
     return (
@@ -240,6 +241,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 <NavLink href="/dashboard/cases" label={mode === 'private' ? 'Client Matters' : 'Cases'} icon={icons.cases} />
                                 <NavLink href="/dashboard/clients" label="Clients" icon={icons.family} />
                                 <NavLink href="/dashboard/documents" label="Documents" icon={icons.docs} />
+                                <NavLink href="/dashboard/discovery" label="Discovery" icon={icons.discovery} />
                                 <NavLink href="/dashboard/messages" label="Messages" icon={icons.msg} badge={3} />
                                 <NavLink href="/dashboard/court-schedules" label="Calendar" icon={icons.calendar} />
                             </NavSection>

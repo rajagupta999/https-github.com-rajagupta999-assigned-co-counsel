@@ -9,7 +9,8 @@ const CLIENT_DATA: Record<string, {
   name: string; caseName: string; caseStatus: string; nextDate: string; prepId: string; prepStatus: string;
   proSeEnabled: boolean;
   invoices: { id: string; desc: string; amount: number; due: string; paid: boolean }[];
-  documents: { name: string; category: string; date: string; status: string }[];
+  documents: { id: string; name: string; category: string; date: string; status: 'Uploaded' | 'Pending Review' | 'Accepted' | 'Rejected'; requested?: boolean }[];
+  requests: { id: string; title: string; desc: string; status: 'Pending' | 'Fulfilled'; dueDate?: string }[];
   messages: { from: string; text: string; time: string; channel: string }[];
   events: { title: string; date: string; type: string }[];
   retainerBalance: number; trustBalance: number;
@@ -23,9 +24,14 @@ const CLIENT_DATA: Record<string, {
       { id: 'INV-002', desc: 'Motion drafting', amount: 750, due: '2026-03-15', paid: false },
     ],
     documents: [
-      { name: 'Government ID', category: 'Identity Documents', date: '2026-01-15', status: 'Reviewed' },
-      { name: 'Police Report', category: 'Case Documents', date: '2026-01-20', status: 'Reviewed' },
-      { name: 'Pay Stubs', category: 'Financial Records', date: '2026-02-01', status: 'Pending Review' },
+      { id: 'd1', name: 'Government ID', category: 'Identity Documents', date: '2026-01-15', status: 'Accepted', requested: true },
+      { id: 'd2', name: 'Police Report', category: 'Case Documents', date: '2026-01-20', status: 'Accepted' },
+      { id: 'd3', name: 'Pay Stubs (Jan)', category: 'Financial Records', date: '2026-02-01', status: 'Pending Review', requested: true },
+    ],
+    requests: [
+      { id: 'req1', title: '2025 Tax Returns', desc: 'Please upload your full federal and state tax returns.', status: 'Pending', dueDate: '2026-02-28' },
+      { id: 'req2', title: 'Accident Photos', desc: 'Any photos you took at the scene of the incident.', status: 'Pending' },
+      { id: 'req3', title: 'Witness Contact Info', desc: 'Name and phone number of the passenger.', status: 'Fulfilled' },
     ],
     messages: [
       { from: 'Attorney', text: 'Your next court date is March 15. Please review the documents I shared.', time: '2026-02-14 10:30 AM', channel: 'Portal Chat' },
@@ -47,8 +53,8 @@ const CLIENT_DATA: Record<string, {
   'client-chen': {
     name: 'Wei Chen', caseName: 'People v. Chen', caseStatus: 'Discovery', nextDate: '2026-04-02',
     prepId: 'chen-prep', prepStatus: 'Not Started', proSeEnabled: true,
-    invoices: [{ id: 'INV-010', desc: 'Initial consultation', amount: 500, due: '2026-03-01', paid: false }],
-    documents: [{ name: 'Passport Copy', category: 'Identity Documents', date: '2026-02-10', status: 'Pending Review' }],
+    invoices: [{ id: 'INV-010', desc: 'Initial consultation', amount: 500, due: '2026-03-01', paid: false }], requests: [],
+    documents: [{ id: 'doc-1', name: 'Passport Copy', category: 'Identity Documents', date: '2026-02-10', status: 'Pending Review' }],
     messages: [{ from: 'Attorney', text: 'Welcome to the portal! Please upload your documents at your earliest convenience.', time: '2026-02-12 9:00 AM', channel: 'Email' }],
     events: [{ title: 'Discovery Conference', date: '2026-04-02', type: 'court' }],
     retainerBalance: 5000, trustBalance: 0,
@@ -60,13 +66,14 @@ const CLIENT_DATA: Record<string, {
   'client-davis': {
     name: 'Angela Davis', caseName: 'Matter of Davis', caseStatus: 'Active', nextDate: '2026-03-22',
     prepId: 'davis-prep', prepStatus: 'Completed', proSeEnabled: true,
+    requests: [],
     invoices: [
       { id: 'INV-020', desc: 'Filing fees', amount: 350, due: '2026-02-15', paid: true },
       { id: 'INV-021', desc: 'Document preparation', amount: 1200, due: '2026-03-01', paid: false },
     ],
     documents: [
-      { name: 'Birth Certificate', category: 'Identity Documents', date: '2026-01-10', status: 'Reviewed' },
-      { name: 'Financial Affidavit', category: 'Financial Records', date: '2026-02-05', status: 'Action Needed' },
+      { id: 'doc-birth', name: 'Birth Certificate', category: 'Identity Documents', date: '2026-01-10', status: 'Accepted' },
+      { id: 'doc-fin', name: 'Financial Affidavit', category: 'Financial Records', date: '2026-02-05', status: 'Pending Review' },
     ],
     messages: [
       { from: 'Attorney', text: 'Please update the financial affidavit with your 2025 tax info.', time: '2026-02-13 11:00 AM', channel: 'SMS' },
@@ -129,12 +136,13 @@ const TIER_BADGE: Record<string, { label: string; class: string }> = {
 const TIER_ICON: Record<string, string> = { prose: '✅', '18b': '⚖️', private: '💼' };
 
 const STATUS_COLORS: Record<string, string> = {
-  'Pending Review': 'bg-yellow-100 text-yellow-800',
-  'Reviewed': 'bg-green-100 text-green-800',
-  'Action Needed': 'bg-red-100 text-red-800',
+  'Pending Review': 'bg-amber-100 text-amber-800',
+  'Accepted': 'bg-green-100 text-green-800',
+  'Uploaded': 'bg-blue-100 text-blue-800',
+  'Rejected': 'bg-red-100 text-red-800',
 };
 
-const CATEGORIES = ['Identity Documents', 'Case Documents', 'Financial Records', 'Other'];
+const CATEGORIES = ['Identity Documents', 'Case Documents', 'Financial Records', 'Evidence', 'Other'];
 
 // ---------- Login Overlay ----------
 function LoginOverlay({ onLogin }: { onLogin: () => void }) {
@@ -179,6 +187,8 @@ export default function ClientPortal() {
   const [msgInput, setMsgInput] = useState('');
   const [msgChannel, setMsgChannel] = useState('Portal Chat');
   const [localMessages, setLocalMessages] = useState(data.messages);
+  const [localDocuments, setLocalDocuments] = useState(data.documents);
+  const [localRequests, setLocalRequests] = useState(data.requests || []);
   const [helpQuery, setHelpQuery] = useState('');
   const [helpMessages, setHelpMessages] = useState<{ from: string; text: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -197,6 +207,38 @@ export default function ClientPortal() {
   const calLink = (event: { title: string; date: string }) => {
     const d = event.date.replace(/-/g, '');
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${d}/${d}`;
+  };
+
+  const handleUpload = (files: FileList | null) => {
+    if (!files) return;
+    const newDocs = Array.from(files).map((file, i) => {
+      // Mock AI Labeling Logic
+      let category = 'Other';
+      let name = file.name;
+      if (file.name.toLowerCase().includes('tax')) { category = 'Financial Records'; name = 'Tax Return (AI Labeled)'; }
+      if (file.name.toLowerCase().includes('photo') || file.name.toLowerCase().includes('img')) { category = 'Evidence'; name = 'Scene Photo (AI Labeled)'; }
+      if (file.name.toLowerCase().includes('id')) { category = 'Identity Documents'; }
+
+      return {
+        id: `new-${Date.now()}-${i}`,
+        name: name,
+        category: category,
+        date: new Date().toISOString().split('T')[0],
+        status: 'Uploaded' as const,
+      };
+    });
+
+    setLocalDocuments(prev => [...newDocs, ...prev]);
+    
+    // Auto-complete requests based on simple matching
+    const taxReq = localRequests.find(r => r.title.includes('Tax') && r.status === 'Pending');
+    if (taxReq && newDocs.some(d => d.name.includes('Tax'))) {
+      setLocalRequests(prev => prev.map(r => r.id === taxReq.id ? { ...r, status: 'Fulfilled' } : r));
+    }
+    const photoReq = localRequests.find(r => r.title.includes('Photo') && r.status === 'Pending');
+    if (photoReq && newDocs.some(d => d.name.includes('Photo'))) {
+      setLocalRequests(prev => prev.map(r => r.id === photoReq.id ? { ...r, status: 'Fulfilled' } : r));
+    }
   };
 
   return (
@@ -295,52 +337,100 @@ export default function ClientPortal() {
 
         {/* ---------- DOCUMENTS ---------- */}
         {tab === 'documents' && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-900">Documents</h2>
+          <div className="space-y-8">
+            <h2 className="text-xl font-bold text-gray-900">Document Center</h2>
+
+            {/* Requests Checklist */}
+            {localRequests.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span>📋</span> Attorney Requests
+                </h3>
+                <div className="space-y-3">
+                  {localRequests.map(req => (
+                    <div key={req.id} className={`flex items-start gap-3 p-3 rounded-lg border ${req.status === 'Fulfilled' ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+                      <div className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs text-white ${req.status === 'Fulfilled' ? 'bg-green-500' : 'bg-gray-300'}`}>
+                        {req.status === 'Fulfilled' ? '✓' : ''}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <p className={`text-sm font-semibold ${req.status === 'Fulfilled' ? 'text-green-800' : 'text-gray-900'}`}>{req.title}</p>
+                          {req.dueDate && <span className="text-[10px] text-red-500 font-medium">Due {req.dueDate}</span>}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{req.desc}</p>
+                      </div>
+                      {req.status === 'Pending' && (
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-xs font-medium text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                        >
+                          Upload →
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Upload Zone */}
-            <div
-              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={e => { e.preventDefault(); setDragOver(false); }}
-              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'}`}
-            >
-              <input type="file" ref={fileInputRef} className="hidden" multiple />
-              <p className="text-3xl mb-2">📁</p>
-              <p className="text-sm text-gray-600 mb-2">Drag & drop files here</p>
-              <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Browse Files</button>
-            </div>
-
-            {/* Intake Status */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-semibold text-gray-900">Intake Form Completion</span>
-                <span className="text-xs font-bold text-blue-600">75%</span>
+            <div>
+              <h3 className="font-bold text-gray-900 mb-2">Upload Files</h3>
+              <div
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => { 
+                  e.preventDefault(); 
+                  setDragOver(false); 
+                  if (e.dataTransfer.files) handleUpload(e.dataTransfer.files);
+                }}
+                className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragOver ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'}`}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  multiple 
+                  onChange={e => handleUpload(e.target.files)}
+                />
+                <p className="text-3xl mb-2">📁</p>
+                <p className="text-sm text-gray-600 mb-2">Drag & drop images, PDFs, or audio here</p>
+                <p className="text-xs text-gray-400 mb-4">AI will automatically label your files</p>
+                <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Browse Files</button>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: '75%' }} /></div>
             </div>
 
             {/* Documents by Category */}
-            {CATEGORIES.map(cat => {
-              const docs = data.documents.filter(d => d.category === cat);
-              if (!docs.length) return null;
-              return (
-                <div key={cat}>
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{cat}</h3>
-                  <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-                    {docs.map((d, i) => (
-                      <div key={i} className="flex items-center justify-between p-4">
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{d.name}</p>
-                          <p className="text-xs text-gray-400">{d.date}</p>
+            <div>
+              <h3 className="font-bold text-gray-900 mb-3">Your Files</h3>
+              {CATEGORIES.map(cat => {
+                const docs = localDocuments.filter(d => d.category === cat);
+                if (!docs.length) return null;
+                return (
+                  <div key={cat} className="mb-4 last:mb-0">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{cat}</h4>
+                    <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+                      {docs.map((d, i) => (
+                        <div key={d.id || i} className="flex items-center justify-between p-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                              {d.name}
+                              {d.name.includes('AI Labeled') && (
+                                <span className="text-[8px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-bold">AI</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400">{d.date}</p>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[d.status] || 'bg-gray-100 text-gray-600'}`}>
+                            {d.status}
+                          </span>
                         </div>
-                        <span className={`text-[10px] font-semibold px-2 py-1 rounded-full ${STATUS_COLORS[d.status] || 'bg-gray-100 text-gray-600'}`}>{d.status}</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 

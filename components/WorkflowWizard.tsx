@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import ESignature, { SigningBlock, SignedBadge, type SignatureData } from '@/components/ESignature';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -286,6 +287,22 @@ function StepGenerate({ documentName, mockContent, selectedSourceCount, isProSe 
 }
 
 function StepExport({ documentName, isProSe }: { documentName: string; isProSe: boolean }) {
+  const [signatures, setSignatures] = useState<SignatureData[]>([]);
+  const [showSignPad, setShowSignPad] = useState<{ name: string; role: 'attorney' | 'client' | 'witness' | 'notary' | 'other'; email?: string } | null>(null);
+
+  const parties = isProSe
+    ? [{ name: '', role: 'client' as const, email: '' }]
+    : [
+        { name: '', role: 'attorney' as const, email: '' },
+        { name: '', role: 'client' as const, email: '' },
+        { name: '', role: 'witness' as const, email: '' },
+      ];
+
+  const handleSign = (sig: SignatureData) => {
+    setSignatures(prev => [...prev, sig]);
+    setShowSignPad(null);
+  };
+
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-bold text-slate-800">{isProSe ? '✅ Your Document is Ready!' : '✅ Review & Export'}</h3>
@@ -301,11 +318,49 @@ function StepExport({ documentName, isProSe }: { documentName: string; isProSe: 
           <p className="text-xs text-slate-500 italic">Document preview would render here with full formatting...</p>
         </div>
       </div>
+
+      {/* ─── E-Signature Section ─── */}
+      <div className="border border-slate-200 rounded-xl bg-white p-6">
+        <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">✍️ Electronic Signatures</h3>
+        <p className="text-xs text-slate-500 mb-4">Sign this document electronically. ESIGN Act &amp; UETA compliant.</p>
+
+        {showSignPad ? (
+          <div className="bg-slate-900 rounded-xl">
+            <ESignature
+              signerName={showSignPad.name}
+              signerRole={showSignPad.role}
+              signerEmail={showSignPad.email}
+              onSign={handleSign}
+              onCancel={() => setShowSignPad(null)}
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <SigningBlock
+              parties={parties}
+              signatures={signatures}
+              onRequestSign={(party) => setShowSignPad(party)}
+            />
+          </div>
+        )}
+
+        {signatures.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-slate-200">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span>🔒 Signatures encrypted &amp; timestamped</span>
+              <span>•</span>
+              <span>Audit trail: {signatures.map(s => `${s.name} (${s.role})`).join(', ')}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {[
-          { label: '📥 Download as PDF', desc: 'Court-ready PDF format', primary: true },
+          { label: '📥 Download as PDF', desc: signatures.length > 0 ? 'With signatures embedded' : 'Court-ready PDF format', primary: true },
           { label: '📥 Download as Word', desc: 'Editable .docx format', primary: true },
           { label: '📁 Add to Case File', desc: 'Save to case documents', primary: false },
+          { label: '✉️ Send for Signature', desc: isProSe ? 'Email to other party' : 'Send to client for e-sign', primary: false },
           { label: '🏛 File with Court', desc: 'Coming Soon', primary: false, disabled: true },
           { label: '👤 Share with Client', desc: isProSe ? 'Save a copy' : 'Via Client Portal', primary: false },
         ].map((btn, i) => (
@@ -582,6 +637,7 @@ export default function WorkflowWizardPage({ title, subtitle, icon, iconGradient
               <div className="flex flex-wrap gap-2 mt-3">
                 <button className="text-xs px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-blue-700">📥 Download PDF</button>
                 <button className="text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors text-slate-600">📥 Download Word</button>
+                <button className="text-xs px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors text-amber-700">✍️ E-Sign</button>
                 <button className="text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors text-slate-600">📁 Add to Case File</button>
               </div>
             </div>
